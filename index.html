@@ -3376,13 +3376,17 @@ function parseCarry(code){code=(code||'').trim().replace(/\s+/g,'');const m=code
     let sum=0;for(let i=0;i<json.length;i++)sum=(sum*31+json.charCodeAt(i))>>>0;if(sum.toString(36).toUpperCase()!==m[2])return null;const d=JSON.parse(json);return d&&d.lv?d:null}catch(e){return null}}
 function askCarryCode(){return new Promise(res=>{
   const w=document.createElement('div');w.id='carry';w.className='win';
-  w.innerHTML=`<b>引き継ぎコード</b><p>第二部の さいごに 表示された コード（JIL2-… ではじまる）を 貼りつけてください。</p><textarea placeholder="JIL2-..."></textarea><p class="err" style="color:var(--danger);min-height:1.4em;margin:4px 0"></p><div class="btns"><button type="button" class="ok">はじめる</button><button type="button" class="cl">もどる</button></div>`;
-  $('#app').appendChild(w);const ta=w.querySelector('textarea');
+  /* スマホの キーボードに 隠れないよう 画面の 上に 寄せる。貼り付けボタンで キーボードなしでも 入力できる */
+  w.style.cssText='z-index:300;top:max(8px,env(safe-area-inset-top,0px));transform:translateX(-50%);max-height:calc(100% - 16px);overflow:auto';
+  w.innerHTML=`<b>引き継ぎコード</b><p style="margin:4px 0">第二部の さいごに 表示された コード（JIL2-… ではじまる）を 貼りつけてください。</p><textarea placeholder="JIL2-..." style="height:64px"></textarea><p class="err" style="color:var(--danger);min-height:1.2em;margin:2px 0"></p><div class="btns"><button type="button" class="ps">貼り付け</button><button type="button" class="ok">はじめる</button><button type="button" class="cl">もどる</button></div>`;
+  $('#app').appendChild(w);const ta=w.querySelector('textarea'),err=w.querySelector('.err');
   for(const ev of['keydown','keyup','pointerdown'])w.addEventListener(ev,e=>e.stopPropagation());
-  setTimeout(()=>ta.focus(),50);
-  const done=v=>{w.remove();res(v)};
+  const vv=window.visualViewport;const fit=()=>{if(vv)w.style.top=(vv.offsetTop+8)+'px'};if(vv){vv.addEventListener('resize',fit);vv.addEventListener('scroll',fit)}
+  const done=v=>{if(vv){vv.removeEventListener('resize',fit);vv.removeEventListener('scroll',fit)}ta.blur();w.remove();window.scrollTo(0,0);res(v)};
+  const tryStart=()=>{const d=parseCarry(ta.value);if(!d){sfx('cancel');err.textContent='コードが 正しくないようです。もう一度 確かめてください。';return}sfx('ok');done(d)};
+  w.querySelector('.ps').onclick=async()=>{try{const t=await navigator.clipboard.readText();ta.value=(t||'').trim();ta.blur();err.textContent=t?'':'クリップボードが 空です。';if(t&&parseCarry(ta.value)){err.style.color='var(--gold)';err.textContent='コードを 読み込みました。「はじめる」を 押してください。'}}catch(e){err.textContent='貼り付けが 許可されませんでした。下の 枠を 長押しして 貼り付けてください。';ta.focus()}};
   w.querySelector('.cl').onclick=()=>{sfx('cancel');done(null)};
-  w.querySelector('.ok').onclick=()=>{const d=parseCarry(ta.value);if(!d){sfx('cancel');w.querySelector('.err').textContent='コードが 正しくないようです。もう一度 確かめてください。';return}sfx('ok');done(d)};
+  w.querySelector('.ok').onclick=tryStart;
 })}
 function applyCarry(d){
   newGame();
