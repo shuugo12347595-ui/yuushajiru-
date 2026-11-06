@@ -4240,6 +4240,8 @@ async function p3Ch6(){
   await tutorial('王都防衛','逃げ遅れた 住民（5人）に 話しかけて 避難させよう。<br>紫の 感染者に つかまると ダメージを 受けて 押し戻される。<br>感染者は 操られているだけ――<span class="k">戦ってはいけない</span>。<br>全員 避難させたら 広場へ！');
   npcDel('qSol');saveGame();
 }
+/* 防衛戦（step 77）と その直後は、町の 人は みんな 避難している（いつもの 会話は 出さない） */
+for(const n of NPCS.ntown){const c=n.cond;n.cond=()=>!(st()>=77&&st()<=78)&&(!c||c())}
 function p3SpawnDefense(){
   const list=[{id:'qC',spr:'celes',x:15,y:9,dir:'down'}];
   RESIDENT_SPOTS.forEach(([x,y,nm,spr],i)=>{if(!(S.flags.evacDone||{})[i])list.push({id:'qR'+i,spr,x,y,dir:'down',talk:async n=>p3Evac(n,nm)})});
