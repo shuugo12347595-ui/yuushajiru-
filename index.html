@@ -3975,7 +3975,7 @@ Object.assign(MAPDEF,{
   ngrave:{name:'王都の 外れの 墓地',fill:'樹',music:()=>null,tint:'snowlite'},
 });
 /* 部屋や墓地は 静かに（曲なし） */
-{const base=MAPDEF.ntown.music;MAPDEF.ntown.music=()=>st()>=72&&st()<=80?(st()===73?'town':st()===77?'tension':null):base()}
+{const base=MAPDEF.ntown.music;MAPDEF.ntown.music=()=>st()>=72&&st()<=80?(st()===73?'town':(st()===77&&S.flags.evac!==0)?'tension':null):base()}
 
 /* ---- 小道具 ---- */
 const P3={};
@@ -4009,7 +4009,7 @@ function showBook(title,lines){return new Promise(res=>{
   return({71:S.flags.descended?'宿屋へ 戻ろう':'バニカを 支えて 山を 下り、王都へ 戻ろう'+(S.flags.haja?'':'（途中の 洞窟で 何かが 光っている）'),72:'……',73:'バニカと 街を 歩こう（宿屋に 戻ると 一日が 終わる）',
     74:S.leader==='celes'?`（セレス）解呪の 手がかりを 探す（${r}/4）　王立図書館・旧市街（王都の 西）`:'……',
     75:S.flags.herb?'雪割草を 宿屋へ 持ち帰ろう':'熱に 効く 雪割草を 探そう（雪原の 東の 崖）',76:'……',
-    77:'住民を 避難させろ！（のこり '+(P3.left??5)+'人）　感染者には 近づかない',78:'……',79:'……',80:'墓地を 出よう'})[s]||base(s)}}
+    77:S.flags.evac===0?'広場へ 向かえ':'住民を 避難させろ！（のこり '+(S.flags.evac??5)+'人）　感染者には 近づかない',78:'……',79:'……',80:'墓地を 出よう'})[s]||base(s)}}
 
 /* ---- 移動・建物 ---- */
 {const base=p3OnStep;p3OnStep=function(m,x,y){
@@ -4017,7 +4017,7 @@ function showBook(title,lines){return new Promise(res=>{
   if(m.id==='nold'&&x>=m.w-1){run(()=>goMap('ntown',1,8,'right'));return true}
   if(m.id==='nroom'&&y>=m.h-1){run(()=>goMap('ntown',5,7,'down'));return true}
   if(m.id==='ngrave'&&y>=m.h-1){run(()=>say('','……'));return true}
-  if(m.id==='ntown'&&st()===77&&P3.left===0&&x>=13&&x<=18&&y>=8&&y<=13){run(()=>p3Plaza());return true}
+  if(m.id==='ntown'&&st()===77&&S.flags.evac===0&&x>=13&&x<=18&&y>=8&&y<=13){run(()=>p3Plaza());return true}
   return base(m,x,y)}}
 TILEACT['祭']=async()=>{if(S.leader==='celes'&&st()===74&&!S.flags.r2){await p3Research('r2');return}await say('','古い 教会の 祭壇だ。')};
 TILEACT['棚']=async()=>{if(S.leader==='celes'&&st()===74&&!S.flags.r3){await p3Research('r3');return}await say('','捨てられた 診療記録が 積まれている。')};
@@ -4222,7 +4222,7 @@ PAL.infected=Object.assign({},PAL.man,{S:'#b4a8c8',C:'#5a4a6a',T:'#3a2e4a',K:'#3
 async function p3Ch6(){
   setStep(77);S.leader=null;S.hideParty=1;banicaLeave();
   await narrate(['夜明け前――','王都に 警鐘が 鳴り響く。'],2200);
-  F.time='dusk';loadMap('ntown',5,7,'down');P3.left=RESIDENT_SPOTS.length;
+  F.time='dusk';loadMap('ntown',5,7,'down');S.flags.evac=RESIDENT_SPOTS.length;
   const list=[{id:'qC',spr:'celes',x:15,y:9,dir:'down'},{id:'qSol',spr:'guard',x:6,y:8,dir:'left'}];
   RESIDENT_SPOTS.forEach(([x,y,nm,spr],i)=>list.push({id:'qR'+i,spr,x,y,dir:'down',talk:async n=>p3Evac(n,nm)}));
   INFECTED_SPOTS.forEach(([x,y],i)=>list.push({id:'qI'+i,spr:'infected',x,y,dir:'down',chase:1,speed:.62,wt:1+i*.3,onCatch:n=>p3Grabbed(n)}));
@@ -4240,11 +4240,17 @@ async function p3Ch6(){
   await tutorial('王都防衛','逃げ遅れた 住民（5人）に 話しかけて 避難させよう。<br>紫の 感染者に つかまると ダメージを 受けて 押し戻される。<br>感染者は 操られているだけ――<span class="k">戦ってはいけない</span>。<br>全員 避難させたら 広場へ！');
   npcDel('qSol');saveGame();
 }
+function p3SpawnDefense(){
+  const list=[{id:'qC',spr:'celes',x:15,y:9,dir:'down'}];
+  RESIDENT_SPOTS.forEach(([x,y,nm,spr],i)=>{if(!(S.flags.evacDone||{})[i])list.push({id:'qR'+i,spr,x,y,dir:'down',talk:async n=>p3Evac(n,nm)})});
+  INFECTED_SPOTS.forEach(([x,y],i)=>list.push({id:'qI'+i,spr:'infected',x,y,dir:'down',chase:1,speed:.62,wt:1+i*.3,onCatch:n=>p3Grabbed(n)}));
+  npcSet(list)}
+{const base=loadMap;loadMap=function(...a){const r=base(...a);if(F.map&&F.map.id==='ntown'&&st()===77&&!F.npcs.some(n=>n.id==='qC')){if((S.flags.evac??5)>0)p3SpawnDefense();else npcSet([{id:'qC',spr:'celes',x:15,y:9,dir:'down'}])}return r}}
 async function p3Evac(n,nm){
   await say(nm,['た、助けて……！','あ、あの人たち、目が おかしいの……！','腰が 抜けて……','荷物が……いや、命が 先だな……！','うちの 家族は 先に 逃げたんだ……！'][RESIDENT_SPOTS.findIndex(r=>r[2]===nm)]||'助けて……！');
   await say(J_('戦闘'),'城の 方へ 逃げろ！ 早く！');
-  sfx('ok');npcDel(n.id);P3.left=Math.max(0,(P3.left??1)-1);updateHUD();
-  if(P3.left===0){await say(C_('真剣'),'（ジルさん！ 皆さん 避難できました！ 広場へ！）');}
+  sfx('ok');npcDel(n.id);S.flags.evacDone=S.flags.evacDone||{};S.flags.evacDone[+String(n.id).slice(2)]=1;S.flags.evac=Math.max(0,(S.flags.evac??1)-1);updateHUD();saveGame();
+  if(S.flags.evac===0){stopMusic();await say(C_('真剣'),'（ジルさん！ 皆さん 避難できました！ 広場へ！）');}
 }
 async function p3Grabbed(n){
   F.moving=false;sfx('hurt');F.shake=.35;
@@ -4565,7 +4571,7 @@ function fxRedAir(){return fxAdd((g,cx,cy,p,now)=>{g.fillStyle=`rgba(120,20,10,$
 
 /* ---- ムービー１：女王感染者バニカの登場 ---- */
 p3Plaza=async function(){
-  F.moving=false;P3.cut=true;F.npcs=F.npcs.filter(n=>!String(n.id).startsWith('qI'));
+  F.moving=false;P3.cut=true;stopMusic();$('#obj').style.visibility='hidden';F.npcs=F.npcs.filter(n=>!String(n.id).startsWith('qI'));
   npcSet([{id:'qQB',spr:'banica',x:16,y:8,dir:'down'},{id:'qC',spr:'celes',x:13,y:13,dir:'up'},
     {id:'qJ1',spr:'infected',x:14,y:8,dir:'down'},{id:'qJ2',spr:'infected',x:18,y:8,dir:'down'},{id:'qJ3',spr:'infected',x:15,y:7,dir:'down'},{id:'qJ4',spr:'infected',x:17,y:7,dir:'down'}]);
   F.px=16;F.py=13;F.dir='up';P3.cut=false;await sleep(400);
@@ -4589,7 +4595,7 @@ p3Plaza=async function(){
   fxDel('staff');
   saveGame();
   const r=await doBattle({enemies:['qbanica'],bg:'snow',noEscape:true,solo:'jil',queen:1,title:'女王感染者 バニカ',music:'banica'});
-  if(r.result!=='queen'){fxClear();await gameOver();return}
+  if(r.result!=='queen'){fxClear();$('#obj').style.visibility='';await gameOver();return}
   await p3CelesChoice();
 };
 /* ---- ムービー２：セレスの決断 ---- */
@@ -4661,7 +4667,7 @@ p3CelesChoice=async function(){
   await say('','同時に、操られていた 感染者たちの 動きが 止まった。');
   fxDel('sword');await sleep(200);
   await jilWalk([[16,11],[16,10],[16,9]],'up');
-  await p3Confession();
+  await p3Confession();$('#obj').style.visibility='';
 };
 
 /* ================= 第三部 第八章 父の遺言・第九章 霧の島・終章 勇者の終わり ================= */
