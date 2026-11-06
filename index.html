@@ -2051,7 +2051,7 @@ function makeEnemyMesh(type){
   {const p2=makeP2Enemy(type,M,mats);if(p2)return p2;if(['cgolem','sentinel','mweapon','guardian','igolem'].includes(type))return p2Golem(type,M,mats)}
   if(['slime','rslime','dslime','cslime','sslime'].includes(type)){
     // ルミスライム：丸いしずく形＋浮かぶ泡＋白い四角い目
-    const col={slime:'#3a8ae8',rslime:'#e04a5a',dslime:'#e0a030',cslime:'#9adcf0',sslime:'#e4f0ff'}[type],lite={slime:'#9fd4ff',rslime:'#ffb0b8',dslime:'#ffe0a0',cslime:'#ffffff',sslime:'#ffffff'}[type];
+    const col={slime:'#3a8ae8',rslime:'#e04a5a',dslime:'#e0a030',cslime:'#9adcf0',sslime:'#6fb0e8'}[type],lite={slime:'#9fd4ff',rslime:'#ffb0b8',dslime:'#ffe0a0',cslime:'#ffffff',sslime:'#ffffff'}[type];
     const body=new THREE.Group();body.position.y=.38;root.add(body);parts.body=body;
     const b=new THREE.Mesh(new THREE.SphereGeometry(.6,16,12),M(col,{transparent:true,opacity:.9}));b.scale.set(1.08,.7,1);b.castShadow=true;body.add(b);
     const top=new THREE.Mesh(new THREE.SphereGeometry(.3,12,10),M(col,{transparent:true,opacity:.9}));top.position.set(.06,.36,-.04);top.scale.set(1,1.15,1);body.add(top);
@@ -2063,7 +2063,7 @@ function makeEnemyMesh(type){
     const hl=new THREE.Mesh(new THREE.SphereGeometry(.09,6,5),new THREE.MeshBasicMaterial({color:'#ffffff'}));hl.position.set(-.34,.24,.36);body.add(hl);
     parts.bubbles=[];for(let k=0;k<3;k++){const bb=new THREE.Mesh(new THREE.SphereGeometry(.07+k*.025,8,6),new THREE.MeshBasicMaterial({color:lite,transparent:true,opacity:.75}));root.add(bb);parts.bubbles.push(bb)}
   }else if(['wolf','bwolf','dwolf','cwolf','kwolf','swolf'].includes(type)){
-    const red=type==='bwolf',sand=type==='dwolf',kg=type==='kwolf',cw=type==='cwolf';const g=red?'#8a3a30':sand?'#c8a060':kg?'#d8dce8':cw?'#4a5a7a':type==='swolf'?'#e8eef8':'#7d8290',dk=red?'#4a1a16':sand?'#7a5a30':kg?'#8a8ea0':cw?'#2a3248':type==='swolf'?'#9aa8c0':'#4a4d58';const body=new THREE.Group();root.add(body);parts.body=body;
+    const red=type==='bwolf',sand=type==='dwolf',kg=type==='kwolf',cw=type==='cwolf';const g=red?'#8a3a30':sand?'#c8a060':kg?'#d8dce8':cw?'#4a5a7a':type==='swolf'?'#a8b8d0':'#7d8290',dk=red?'#4a1a16':sand?'#7a5a30':kg?'#8a8ea0':cw?'#2a3248':type==='swolf'?'#9aa8c0':'#4a4d58';const body=new THREE.Group();root.add(body);parts.body=body;
     const tor=new THREE.Mesh(new THREE.BoxGeometry(.55,.48,1.15),M(g));tor.position.y=.72;tor.castShadow=true;body.add(tor);
     const mane=new THREE.Mesh(new THREE.BoxGeometry(.65,.58,.45),M(red?'#a8564a':'#9aa0ac'));mane.position.set(0,.8,.32);body.add(mane);
     const head=new THREE.Group();head.position.set(0,.92,.68);body.add(head);parts.head=head;
@@ -2129,16 +2129,16 @@ function areaBg(bg){
   return bg}
 function buildArena(bg){
   const sc=new THREE.Scene();
-  const sky={desert:'#f0d49c',fire:'#2a0905',field:'#8fc4f0',forest:'#7fb0a0',night:'#1a0a12',train:'#9fd0f4',road:'#c0b8d8',cave:'#0e0b14',castle:'#4a3a3e',ship:'#3a4458',beach:'#9fd6f4',temple:'#9aaccc',sunken:'#0c2c4c',crystal:'#0e1426',war:'#a89078',festival:'#141a3a',snow:'#7f98c0'}[bg]||'#8fc4f0';
+  const sky={desert:'#f0d49c',fire:'#2a0905',field:'#8fc4f0',forest:'#7fb0a0',night:'#1a0a12',train:'#9fd0f4',road:'#c0b8d8',cave:'#0e0b14',castle:'#4a3a3e',ship:'#3a4458',beach:'#9fd6f4',temple:'#9aaccc',sunken:'#0c2c4c',crystal:'#0e1426',war:'#a89078',festival:'#141a3a',snow:'#6a84b0'}[bg]||'#8fc4f0';
   sc.background=new THREE.Color(sky);sc.fog=new THREE.Fog(sky,bg==='sunken'?12:18,bg==='sunken'?36:46);
   const hemi=new THREE.HemisphereLight(bg==='night'?'#ff9a6a':bg==='fire'?'#ff8a50':bg==='desert'?'#fff0cc':'#ffffff',bg==='night'?'#200810':bg==='fire'?'#3a0f06':bg==='desert'?'#9a7a3a':'#3a5a30',bg==='night'?.55:bg==='fire'?.7:.75);sc.add(hemi);
   const dl=new THREE.DirectionalLight(bg==='night'?'#ff8a5a':bg==='fire'?'#ff9a60':bg==='desert'?'#fff0d0':'#fff4e0',bg==='night'?.6:bg==='fire'?.7:.85);dl.position.set(-6,14,8);dl.castShadow=true;dl.shadow.mapSize.set(512,512);const sc2=dl.shadow.camera;sc2.left=-10;sc2.right=10;sc2.top=10;sc2.bottom=-10;sc2.far=40;sc.add(dl);
   // 紅盤
-  const BC={ship:['#8a6a44','#7a5a38','#9a7a52'],beach:['#e8d4a0','#dcc690','#f0e0b0'],temple:['#c8c8d8','#b0b0c4','#dcdce8'],sunken:['#3a5a7a','#2e4a68','#4c6c8c'],crystal:['#3a4a6a','#2e3c58','#4a5c80'],war:['#6a6a40','#5e5e38','#78784c'],festival:['#3a3a5a','#2e2e4c','#4a4a6a'],snow:['#a8b8d0','#93a5c0','#c2cfe2'],desert:['#dcbd78','#cfae66','#e8cc90'],fire:['#3a1e18','#2c1410','#4e2a20'],field:['#4a8a36','#3e7a2e','#56963f'],forest:['#2f6a30','#285c29','#377636'],train:['#56a040','#4a9038','#62ac4a'],road:['#6a7a50','#5e6c46','#76865a'],cave:['#3a3644','#2e2a36','#46424f'],castle:['#8c8898','#77737f','#9a96a6'],night:['#3a2420','#2e1c18','#46302a']}[bg]||['#4a8a36','#3e7a2e','#56963f'];
+  const BC={ship:['#8a6a44','#7a5a38','#9a7a52'],beach:['#e8d4a0','#dcc690','#f0e0b0'],temple:['#c8c8d8','#b0b0c4','#dcdce8'],sunken:['#3a5a7a','#2e4a68','#4c6c8c'],crystal:['#3a4a6a','#2e3c58','#4a5c80'],war:['#6a6a40','#5e5e38','#78784c'],festival:['#3a3a5a','#2e2e4c','#4a4a6a'],snow:['#9aaccc','#8597b8','#b4c2da'],desert:['#dcbd78','#cfae66','#e8cc90'],fire:['#3a1e18','#2c1410','#4e2a20'],field:['#4a8a36','#3e7a2e','#56963f'],forest:['#2f6a30','#285c29','#377636'],train:['#56a040','#4a9038','#62ac4a'],road:['#6a7a50','#5e6c46','#76865a'],cave:['#3a3644','#2e2a36','#46424f'],castle:['#8c8898','#77737f','#9a96a6'],night:['#3a2420','#2e1c18','#46302a']}[bg]||['#4a8a36','#3e7a2e','#56963f'];
   const N=10,SZ=1.3;const tex=canvasTex(N*8,N*8,g=>{for(let y=0;y<N;y++)for(let x=0;x<N;x++){g.fillStyle=(x+y)%2?BC[1]:BC[0];g.fillRect(x*8,y*8,8,8);g.fillStyle=BC[2];g.fillRect(x*8,y*8,8,1)}});
   const edge=BC[1];const board=new THREE.Mesh(new THREE.BoxGeometry(N*SZ,.3,N*SZ),[lam(edge),lam(edge),lam('#ffffff',{map:tex}),lam(edge),lam(edge),lam(edge)]);board.position.y=-.15;board.receiveShadow=true;sc.add(board);
   const rim=new THREE.Mesh(new THREE.BoxGeometry(N*SZ+.5,.25,N*SZ+.5),lam(BC[1]));rim.position.y=-.22;sc.add(rim);
-  const gcol={ship:'#1a3a6a',beach:'#2a7ac8',temple:'#8a8aa0',sunken:'#12304a',crystal:'#141a2c',war:'#5a5034',festival:'#1c2440',snow:'#a4b4ca',desert:'#d6b26a',fire:'#2a120c',field:'#3f8a34',forest:'#2f6a30',night:'#2a1a1a',train:'#4f9d3a',road:'#6a7a50',cave:'#2a2630',castle:'#77737f'}[bg]||'#3f8a34';
+  const gcol={ship:'#1a3a6a',beach:'#2a7ac8',temple:'#8a8aa0',sunken:'#12304a',crystal:'#141a2c',war:'#5a5034',festival:'#1c2440',snow:'#93a6c4',desert:'#d6b26a',fire:'#2a120c',field:'#3f8a34',forest:'#2f6a30',night:'#2a1a1a',train:'#4f9d3a',road:'#6a7a50',cave:'#2a2630',castle:'#77737f'}[bg]||'#3f8a34';
   const gtex=canvasTex(64,64,g=>{g.fillStyle=gcol;g.fillRect(0,0,64,64);for(let i=0;i<260;i++){g.fillStyle=i%2?'rgba(255,255,255,.07)':'rgba(0,0,0,.09)';g.fillRect(Math.floor(hash(i,1)*64),Math.floor(hash(i,2)*64),2,2)}});gtex.wrapS=gtex.wrapT=THREE.RepeatWrapping;gtex.repeat.set(14,14);
   const ground=new THREE.Mesh(new THREE.PlaneGeometry(120,120),lam('#ffffff',{map:gtex}));ground.rotation.x=-Math.PI/2;ground.position.y=-.32;ground.receiveShadow=true;sc.add(ground);
   const props=[];
@@ -2289,7 +2289,7 @@ function makeP2Enemy(type,M,mats){
 }
 /* ゴーレム系・スライム系・狼系・竜系の色違いは 既存の作り方に 色を足して作る */
 function p2Golem(type,M,mats){
-  const C={cgolem:['#8fd0e8','#c8f0ff','#5ac8ff'],sentinel:['#a8a4b0','#5a6a8a','#5ac8ff'],mweapon:['#3a3a48','#2a2a38','#ff3060'],guardian:['#e8e4dc','#c9a33a','#5ac8ff'],igolem:['#cfe8f8','#8ab8d8','#7fe0ff']}[type];
+  const C={cgolem:['#8fd0e8','#c8f0ff','#5ac8ff'],sentinel:['#a8a4b0','#5a6a8a','#5ac8ff'],mweapon:['#3a3a48','#2a2a38','#ff3060'],guardian:['#e8e4dc','#c9a33a','#5ac8ff'],igolem:['#6f9cc8','#33557f','#7fe0ff']}[type];
   const root=new THREE.Group(),parts={family:'golem'};const body=new THREE.Group();root.add(body);parts.body=body;const[stone,trim,core]=C;
   const tor=new THREE.Mesh(new THREE.BoxGeometry(1.3,1.1,.9),M(stone,type==='cgolem'?{transparent:true,opacity:.9}:undefined));tor.position.y=1.5;tor.castShadow=true;body.add(tor);
   const ms=new THREE.Mesh(new THREE.BoxGeometry(1.32,.2,.92),M(trim));ms.position.y=2.0;body.add(ms);
@@ -2303,7 +2303,7 @@ function p2Golem(type,M,mats){
   if(type==='guardian'){const halo=new THREE.Mesh(new THREE.TorusGeometry(.75,.05,6,24),new THREE.MeshBasicMaterial({color:'#e8d080'}));halo.position.y=3.05;halo.rotation.x=Math.PI/2;body.add(halo);parts.halo=halo;
     for(const sx of[-1,1]){const r=new THREE.Mesh(new THREE.TorusGeometry(.5,.05,6,20),M(trim));r.position.set(sx*1.25,2.3,-.1);r.rotation.y=Math.PI/2;body.add(r)}}
   if(type==='sentinel'){body.scale.set(.9,.85,.9)}
-  root.scale.setScalar({cgolem:1.15,sentinel:1,mweapon:1.35,guardian:1.7}[type]);return{root,parts,mats}
+  root.scale.setScalar({cgolem:1.15,sentinel:1,mweapon:1.35,guardian:1.7,igolem:1.25}[type]||1.2);return{root,parts,mats}
 }
 
 function scaledDef(type){
@@ -2556,7 +2556,7 @@ function damageEnemy(e,mult,kind,fixed,ign=0){
   let dmg=fixed!=null?fixed:Math.max(1,Math.round((atkOf()*atkBuff()*mult*PLAYER_DMG-e.d.def*.5*(1-ign))*rnd(.9,1.1)));
   if(b.ails&&b.ails[curK()]&&b.ails[curK()].weak>0)dmg=Math.max(1,Math.round(dmg*.7));
   if(e.d.immortal){/* 木人：ダメージ表示のみ */}else e.hp-=dmg;
-  if(e.sub==='heal'&&e.state==='windup'){e.healDmg=(e.healDmg||0)+dmg;if(e.healDmg>=e.mhp*.06){e.state='stagger';e.st=0;e.sub=null;e.fastWind=0;e.chain=0;banner('詠唱を 阻止した！',1100);sfx('parry')}}
+  if(e.sub==='heal'&&e.state==='windup'){e.healDmg=(e.healDmg||0)+dmg;const pc=Math.min(100,Math.floor(e.healDmg/(e.mhp*.06)*100));if(pc<100)popup(e.pos,'阻止 '+pc+'%','g');if(e.healDmg>=e.mhp*.06){e.state='stagger';e.st=0;e.sub=null;e.fastWind=0;e.chain=0;banner('詠唱を 阻止した！',1100);sfx('parry')}}
   P.sp=Math.min(100,P.sp+(kind.startsWith('skill')||kind==='magic'||kind==='shot'?0:5));
   const crit=kind==='counter'||kind.startsWith('skill');
   popup(e.pos,(kind==='counter'?'COUNTER! ':'')+dmg,kind==='magic'?'m':crit?'c':'');if(kind==='magic'&&b.tut&&b.tut.kind==='magic')b.tut.flag=1;sfx(crit?'crit':'hit');
@@ -2629,7 +2629,7 @@ function enemyDefend(e,kind){const b=BS;const d=e.d;
     e.knock=side.multiplyScalar(11).add(v.multiplyScalar(4));popup(e.pos,'JUST回避！','g');ringFx(e.pos,'#7fc8ff',1.6,.25);sfx('just');e.atkCd=Math.min(e.atkCd,.35);return true}
   return false}
 function advPick(e,dist){const b=BS,d=e.d,pl=b.pl;e.fastWind=0;e.chain=0;
-  if(!e.healed&&e.hp<e.mhp*.3){e.healed=1;e.sub='heal';e.healDmg=0;e.fastWind=1.5;hideTele(e);if(e.rain)clearRain(e);banner(d.name+'が 回復の 詠唱を はじめた！（攻撃で 阻止できる）',1600);return}
+  if(!e.healed&&e.hp<e.mhp*.3){e.healed=1;e.sub='heal';e.healDmg=0;e.healHits=0;e.fastWind=4;hideTele(e);if(e.rain)clearRain(e);banner(d.name+'が 回復の 詠唱を はじめた！（最大HPの6%を 削って 阻止！）',1800);return}
   const r=Math.random();
   if(r<.2){if(e.rain)clearRain(e);e.sub='fan';banner((d.subNames&&d.subNames.fan)||'魔弾の扇！',700)}
   else if(r<.36){if(e.rain)clearRain(e);const back=V3(Math.sin(pl.face),0,Math.cos(pl.face)).multiplyScalar(-1.9);burst(e.pos,'#c0a0ff',14,4);e.pos.copy(pl.pos).add(back);e.pos.x=clamp(e.pos.x,-b.half,b.half);e.pos.z=clamp(e.pos.z,-b.half,b.half);
