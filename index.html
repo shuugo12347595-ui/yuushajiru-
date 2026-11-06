@@ -4063,7 +4063,7 @@ async function p3Ch5(){
   await say(J_(),'ちゃんと 治そう。');
   await say(B_(),'……うん。');
   await say('','ジルが 水を 取りに 部屋を 出る。');
-  await fadeTo(1,500);F.px=4;F.py=4;F.dir='down';await sleep(200);
+  await fadeTo(1,500);P3.hideJil=true;await sleep(200);
   const c=F.npcs.find(n=>n.id==='qC');if(c){c.dir='up'}
   await fadeTo(0,500);
   await say('','バニカは セレスを 見る。');
@@ -4072,7 +4072,7 @@ async function p3Ch5(){
   await say(B_(),'……私、大丈夫だよね？');
   await say('','セレスは 少しだけ 言葉に 詰まる。');
   await say(C_('困り'),'……今は、休みましょう。');
-  await fadeTo(1,1200);
+  await fadeTo(1,1200);P3.hideJil=false;
   /* 三日目 */
   await narrate(['三日目――'],1600);
   setStep(73);banicaBack();loadMap('ntown',5,5,'up');npcSet([{id:'qB',spr:'banica',x:4,y:5,dir:'right'}]);updateHUD();
@@ -4169,7 +4169,7 @@ async function p3CelesNight(){
   /* 二人だけの会話 */
   setStep(75);
   await narrate(['ジルが 薬を 探しに 出かけた 午後――'],2000);
-  F.px=6;F.py=4;npcSet([{id:'qB',spr:'banica',x:2,y:1,dir:'down',lying:1,noblood:1,still:1},{id:'qC',spr:'celes',x:3,y:2,dir:'left'}]);
+  P3.hideJil=true;npcSet([{id:'qB',spr:'banica',x:2,y:1,dir:'down',lying:1,noblood:1,still:1},{id:'qC',spr:'celes',x:3,y:2,dir:'left'}]);
   await fadeTo(0,800);
   await say('','バニカの 部屋に、セレスが 入ってくる。');
   await say(B_(),'……セレス。');
@@ -4177,7 +4177,7 @@ async function p3CelesNight(){
   await say(B_(),'ちょっと、話が あるんだけど。');
   await say(C_('真剣'),'……私も、お話ししたいことが あります。');
   await say('','バニカは 静かに うなずく。');
-  await fadeTo(1,1600);await sleep(1200);
+  await fadeTo(1,1600);await sleep(1200);P3.hideJil=false;
   S.hideParty=1;loadMap('ntown',8,11,'left');npcSet([]);updateHUD();
   await fadeTo(0,800);
   await say(J_('思案'),'……熱に 効く 薬草……どこかに ないのか。');
