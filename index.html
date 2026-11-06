@@ -30,7 +30,7 @@ html,body{height:100%;margin:0;background:var(--night);color:var(--ink);font-fam
 #battle{position:absolute;inset:0}
 #battle canvas{position:absolute;inset:0;width:100%!important;height:100%!important;image-rendering:pixelated}
 #cg{position:absolute;inset:0;z-index:52;background:#000;opacity:0;pointer-events:none;transition:opacity .8s}#cg.on{opacity:1}
-#cg img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 35%;opacity:0;transition:opacity .9s}#cg img.on{opacity:1}
+#cg img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 35%;opacity:0;transition:opacity .9s}#cg img.on{opacity:1}#cg.mem img{transition:opacity 2.4s}#cg.mem img.on{animation:memz 16s ease-out forwards}@keyframes memz{from{transform:scale(1)}to{transform:scale(1.07)}}
 #fade{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;z-index:50;transition:opacity .4s}
 #flash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:49}
 .win{background:var(--win);border:3px solid var(--line);border-radius:7px;box-shadow:0 0 0 2px #000,inset 0 0 0 2px #000,0 6px 18px rgba(0,0,0,.5)}
@@ -4318,6 +4318,8 @@ function queenTick(b,dt){
       queenTalk([[C_('真剣'),'皆さんは 避難できました……！ ジルさん！'],[J_('戦闘'),'……傷つけずに、止める！'],['','操られた 感染者たちが、ジルの 行く手を 阻む！']]).then(()=>{
         for(let i=0;i<3;i++)addEnemy('infected',i,3);banner('感染者は 攻撃すると 怯む（倒れない）',2000)})}
     return}
+  if(q.phase===3&&!q.half&&e.hp<=e.mhp/2){q.half=1;e.state='recover';e.st=0;hideTele(e);if(e.rain)clearRain(e);
+    queenTalk([[B_(),'……ジ……ル……']])}
 }
 /* バニカへの 攻撃：第一・第二段階は 当たらない。最後の 1 は 削れない */
 function queenDamage(e,kind){const b=BS,q=b.q;if(!q||e.type!=='qbanica')return false;
@@ -4326,9 +4328,8 @@ function queenDamage(e,kind){const b=BS,q=b.q;if(!q||e.type!=='qbanica')return f
 function queenFloor(e,dmg){const b=BS,q=b.q;if(!q||e.type!=='qbanica')return dmg;
   if(e.hp>1&&e.hp-dmg<1)return e.hp-1;
   if(e.hp<=1){
-    if(b.t-q.lastMiss>2.2){q.lastMiss=b.t;q.miss++;popup(e.pos,'MISS','g');
-      if(q.miss<3){queenTalk([['','ジルは 最後の 一撃を 振り下ろせない……']]).then(()=>{e.hp=e.mhp;ringFx(e.pos,'#ff6a2a',3,.5);burst(e.pos,'#ff9a4a',30,6);sfx('heal');banner('バニカは 不思議な 力で 全回復した！',1800)})}
-      else{q.talking=true;b.ended=true;(async()=>{banner('ファイアーボム！',1600);sfx('fire');await sleep(700);
+    if(!q.miss){q.lastMiss=b.t;q.miss=1;popup(e.pos,'MISS','g');
+      {q.talking=true;b.ended=true;(async()=>{b.paused=true;await say('','ジルは 最後の 一撃を 振り下ろせない……');b.paused=false;banner('ファイアーボム！',1600);sfx('fire');await sleep(700);
         for(let i=0;i<4;i++){burst(b.pl.pos,'#ff7a2a',40,9);ringFx(b.pl.pos,'#ff3a0a',4+i,.5);sfx('boom');await sleep(160)}
         await flash(900,'#ffd0a0');P.hp=Math.max(1,Math.round(P.hp*.2));b.pl.state='down';b.pl.st=0;await sleep(1400);await endBattle('queen')})()}}
     else popup(e.pos,'MISS','g');
@@ -4373,6 +4374,12 @@ async function p3CelesChoice(){
   await say('','バニカは 静かに 倒れていた。\n同時に、操られていた 感染者たちの 動きが 止まった。');
   await p3Confession();
 }
+/* 告白のあと：バニカの テーマが 終わるまで 思い出の 一枚絵を 流す */
+async function memorySlides(){const a=AU.files&&AU.files.banica;const N=10;
+  const rem=(a&&isFinite(a.duration)&&!a.paused&&!AU.muted)?a.duration-(a.currentTime||0):N*6;
+  const per=Math.max(5,(rem-7)/N)*1000;$('#cg').classList.add('mem');
+  for(let i=1;i<=N;i++){const t0=Date.now();await showCG('cg_mem'+i+'.jpg');await sleep(Math.max(0,per-(Date.now()-t0)))}
+  await hideCG();$('#cg').classList.remove('mem')}
 async function p3Confession(){
   await sleep(400);
   await say(J_('驚き'),'……バニカ？');
@@ -4398,7 +4405,7 @@ async function p3Confession(){
   /* カメラは ゆっくりと 二人から 離れていく */
   $('#hud').hidden=true;await fadeTo(.55,4000);await sleep(1500);
   await fadeTo(1,5000);
-  await waitSongEnd('banica');
+  await Promise.all([waitSongEnd('banica'),memorySlides()]);
   stopMusic();
   setStep(78);S.flags.banicaGone=1;saveGame();
   await p3Ch7();
