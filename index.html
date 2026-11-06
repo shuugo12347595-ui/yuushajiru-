@@ -2625,7 +2625,13 @@ function updateEnemy(e,dt){
   }
   const half=b.half;e.pos.x=clamp(e.pos.x,-half,half);e.pos.z=clamp(e.pos.z,-half,half);
   animateEnemy(e,dt);
+  if(e.type==='qbanica')qbanicaStaff(e);
 }
+/* 女王感染者バニカ：杖の 宝石を ジルへ 向ける（構えている間は 腕を 前へ） */
+function qbanicaStaff(e){const p=e.m.parts;if(!p||!p.sword||!p.armR)return;
+  const atk=e.state==='windup'||e.state==='active';
+  if(atk)p.armR.rotation.x=-1.45;
+  p.sword.rotation.x=atk?Math.PI/2-.12-p.armR.rotation.x:-p.armR.rotation.x-.12}
 /* 第三部のボス（d.adv）：パリィ・ジャスト回避・追加技・全回復 */
 function enemyDefend(e,kind){const b=BS;const d=e.d;
   if(!d.adv||e.dead||kind==='counter'||!(e.state==='idle'||e.state==='recover')||b.t<(e.defCd||0))return false;
