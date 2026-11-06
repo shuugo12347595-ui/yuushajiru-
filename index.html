@@ -2705,6 +2705,7 @@ function afterPlayerDamage(){
   if(b.tut&&P.hp<1)P.hp=1;
   if(b.cfg.event==='swordsman'&&P.hp<=1){P.hp=1}
   const A=ACT();
+  if(b.cfg.queen&&A.hp<1){A.hp=1;popup(b.pl.pos,'……まだだ','g')}
   if(A.hp<=0&&!b.ended){A.hp=0;
     if(b.cfg.triple){b.ended=true;b.pl.state='down';b.pl.st=0;banner(nameOf(curK())+'は たおれた……',1600);loseSeq();return}
     if(b.party&&b.party.some(p=>p.a.hp>0)){banner(nameOf(curK())+'は たおれた！',1200);sfx('die');b.party[b.ci].m.root.visible=false;switchMember(1,true);b.pl.vel=V3();return}
@@ -4286,8 +4287,8 @@ async function p3Plaza(){
 }
 /* ---- 女王感染者バニカ戦 ---- */
 Object.assign(EDEF,{
-  qbanica:{name:'バニカ',hp:9000,atk:86,def:30,exp:0,gold:0,r:.5,speed:3.6,start:7,keep:5.5,wind:.55,act:.35,rec:.6,kind:'boss',reach:3,lunge:13,cd:[.5,1.1],barH:2.9,
-    subsNear:['burst','swing','fan'],subsFar:['bolt','rain','fan','bolt','rain'],subNames:{burst:'フレイムバースト',rain:'紅蓮の雨',fan:'炎の扇'},rainName:'紅蓮の雨',rainCol:'#ff5a1a',boltCol:'#ff7a2a',boltSpd:14,capMul:1},
+  qbanica:{name:'バニカ',hp:9000,atk:58,def:30,exp:0,gold:0,capMul:.45,r:.5,speed:3.6,start:7,keep:5.5,wind:.55,act:.35,rec:.6,kind:'boss',reach:3,lunge:13,cd:[.5,1.1],barH:2.9,
+    subsNear:['burst','swing','swing'],subsFar:['bolt','rain','bolt','rain'],subNames:{burst:'フレイムバースト',rain:'紅蓮の雨'},rainName:'紅蓮の雨',rainCol:'#ff5a1a',boltCol:'#ff7a2a',boltSpd:14},
   infected:{name:'感染者',hp:999,atk:60,def:20,exp:0,gold:0,r:.45,speed:2.6,start:2.4,wind:.6,act:.25,rec:.7,kind:'swing',reach:1.6,cd:[1,2],immortal:1,barH:2.4},
 });
 const QRES=[[-5.5,-1],[5.5,-1],[0,5.8]];
@@ -4312,7 +4313,7 @@ function queenTick(b,dt){
         addFx(ring,2.4,(f,p)=>{ring.scale.setScalar(1.15-.15*p);ring.material.opacity=.5+.5*Math.sin(p*20)});addFx(disc,2.4,(f,p)=>{disc.material.opacity=.15+.35*p});
         setTimeout(()=>{if(BS!==b||b.ended)return;const d=Math.hypot(b.pl.pos.x-pos.x,b.pl.pos.z-pos.z);burst(pos,'#ff7a2a',26,6);ringFx(pos,'#ff5a1a',2.4,.4);sfx('boom');
           if(d<1.8){sfx('parry');ringFx(pos,'#9fd0ff',2.2,.35);popup(pos,'住民を 守った！','g')}
-          else{q.safe-=25;popup(pos,'住民が 炎に……！','r');banner('住民の 安全 '+Math.max(0,q.safe)+'%',1000);if(q.safe<=0&&!b.ended){b.ended=true;banner('住民を 守れなかった……',2000);loseSeq()}}},2400)}}
+          else{q.safe-=25;popup(pos,'住民が 炎に……！','r');if(q.safe<=0)q.safe=0}},2400)}}
     if(q.volley>=7&&q.vt<=0){q.phase=3;for(const m of q.res)m.root.visible=false;
       queenTalk([[C_('真剣'),'皆さんは 避難できました……！ ジルさん！'],[J_('戦闘'),'……傷つけずに、止める！'],['','操られた 感染者たちが、ジルの 行く手を 阻む！']]).then(()=>{
         for(let i=0;i<3;i++)addEnemy('infected',i,3);banner('感染者は 攻撃すると 怯む（倒れない）',2000)})}
