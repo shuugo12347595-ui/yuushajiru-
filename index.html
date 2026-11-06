@@ -874,7 +874,7 @@ function fieldUpdate(dt){
   if(F.moving){F.mt+=dt*(F.map.world?4.2:4.8);if(F.mt>=1){F.px=F.tx;F.py=F.ty;F.moving=false;F.mt=0;onStep()}}
   // NPC wander
   for(const n of F.npcs){
-    if(n.moving){n.mt+=dt*(n.chase?1/n.speed:2.5);if(n.mt>=1){n.x=n.tx;n.y=n.ty;n.moving=false;n.mt=0}continue}
+    if(n.moving){n.mt+=dt*(n.walkSpd||(n.chase?1/n.speed:2.5));if(n.mt>=1){n.x=n.tx;n.y=n.ty;n.moving=false;n.mt=0}continue}
     if(n.chase){if(busy||uiStack.length||mode!=='field')continue;n.wt-=dt;if(n.wt<=0){n.wt=0;chaseStep(n)}continue}
     if(!n.wander||busy)continue;n.wt-=dt;if(n.wt<=0){n.wt=rnd(1.5,4);const d=pick(['up','down','left','right']);const nx=n.x+DX[d],ny=n.y+DY[d];n.dir=d;if(Math.abs(nx-n.hx)<=2&&Math.abs(ny-n.hy)<=2&&!solidAt(nx,ny,n)){n.moving=true;n.tx=nx;n.ty=ny;n.mt=0}}
   }
@@ -909,13 +909,14 @@ function fieldRender(){
   const af=Math.floor(F.anim*(F.moving?6:2.5))%2;
   for(const e of ents){
     const sx=Math.round(e.x-cx),sy=Math.round(e.y-cy)-2;
-    if(e.p){fg.drawImage(sprite(m.sea?'ship':'jil',F.dir,m.sea?Math.floor(F.t*2)%2:af),sx,sy);continue}
+    if(e.p){if(typeof P3!=='undefined'&&P3.hideJil)continue;fg.drawImage(sprite(m.sea?'ship':(S.leader||'jil'),F.dir,m.sea?Math.floor(F.t*2)%2:af),sx,sy);continue}
     if(e.f){fg.drawImage(sprite(e.f,e.dir,af),sx,sy);continue}
     const n=e.n;if(n.alpha!=null)fg.globalAlpha=n.alpha;
-    if(n.lying){fg.save();fg.translate(sx+8,sy+10);fg.rotate(-Math.PI/2);fg.drawImage(sprite(n.spr,'down',0),-8,-8);fg.restore();fg.fillStyle='rgba(140,10,10,.55)';fg.fillRect(sx+3,sy+13,9,2)}
+    if(n.lying){fg.save();fg.translate(sx+8,sy+10);fg.rotate(-Math.PI/2);fg.drawImage(sprite(n.spr,'down',0),-8,-8);fg.restore();if(!n.noblood){fg.fillStyle='rgba(140,10,10,.55)';fg.fillRect(sx+3,sy+13,9,2)}}
     else fg.drawImage(sprite(n.spr,n.dir,n.still?0:af),sx,sy);
     fg.globalAlpha=1;
   }
+  if(typeof p3FxDraw==='function')p3FxDraw(fg,cx,cy);
   drawLabels(cx,cy);
   // tint
   const tm=tintNow();
@@ -962,6 +963,7 @@ function chaseStep(n){
     if(!solidAt(nx,ny,n)){n.dir=mx>0?'right':mx<0?'left':my>0?'down':'up';n.moving=true;n.tx=nx;n.ty=ny;n.mt=0;return}}
 }
 async function caught(n){
+  if(n&&n.onCatch)return n.onCatch(n);
   if(!S.esc)return;F.moving=false;sfx('hurt');F.shake=.4;
   await say('衛兵','見つけたぞ！ 犯罪者ジル！');
   if(F.map.id==='verde'){
@@ -2265,6 +2267,8 @@ function makeP2Enemy(type,M,mats){
   if(type==='merman'){const h=H({skin:'#3a9a9a',eye:'#ffe060',tunic:'#2a6a7a',pants:'#1a4a5a',boots:'#1a4a5a',sleeve:'#3a9a9a',glove:'#3a9a9a',belt:'#c9a33a',ears:1,weapon:'long',blade:'#c8d8e0',scale:1.2});
     for(const x of[-.08,0,.08]){const pr=new THREE.Mesh(new THREE.ConeGeometry(.03,.25,4),M('#c8d8e0'));pr.position.set(x,-1.45,0);pr.rotation.z=Math.PI;h.sword.add(pr)}
     const fin=new THREE.Mesh(new THREE.ConeGeometry(.12,.5,4),M('#2a7a8a'));fin.position.set(0,.55,-.2);fin.rotation.x=-.6;h.head.add(fin);return{root:h.root,parts:h,mats}}
+  if(type==='qbanica'){const k=makeBanicaFF7();const aura=new THREE.Mesh(new THREE.SphereGeometry(.9,12,10),new THREE.MeshBasicMaterial({color:'#a02aff',transparent:true,opacity:.16,depthWrite:false}));aura.position.y=1;k.root.add(aura);return{root:k.root,parts:k,mats:k.mats||[]}}
+  if(type==='infected'){const h=H({skin:'#b4a8c8',eye:'#c040ff',hair:'#3a2e4a',tunic:'#5a4a6a',pants:'#3a2e4a',boots:'#2a2030',sleeve:'#5a4a6a',glove:'#b4a8c8',belt:'#2a2030',scale:1.05});return{root:h.root,parts:h,mats}}
   if(type==='nemetis'){const h=H({skin:'#f4e4e8',eye:'#8a7ad8',hair:'#e4e6ff',tunic:'#4a5ac8',pants:'#4a5ac8',boots:'#e8f0ff',sleeve:'#c8d4ff',glove:'#f4e4e8',belt:'#ffffff',buckle:'#7fe0ff',scarf:'#ffffff',cape:'#c8d4ff',weapon:'club',scale:1.45});
     const lh=new THREE.Mesh(new THREE.BoxGeometry(.6,1,.14),M('#e4e6ff'));lh.position.set(0,-.2,-.22);h.head.add(lh);
     const skirt=new THREE.Mesh(new THREE.ConeGeometry(.55,1.1,8),M('#4a5ac8'));skirt.position.y=.35;h.body.add(skirt);
@@ -2348,6 +2352,7 @@ function battleUpdate(rdt){
   const dt=rdt;b.t+=dt;
   const edt=b.slow>0?dt*.28:dt;if(b.slow>0){b.slow-=dt;if(b.slow<=0)$('#slowfx').style.opacity=0}
   if(!b.ended){updatePlayer(dt);for(const e of b.enemies)updateEnemy(e,edt);updateProj(dt);updateParty(dt)}
+  if(b.cfg.queen)queenTick(b,dt);
   separate();
   // fx
   for(let i=b.fx.length-1;i>=0;i--){const f=b.fx[i];f.t+=dt;const p=Math.min(1,f.t/f.life);f.upd&&f.upd(f,p,dt);if(p>=1){b.sc.remove(f.mesh);b.fx.splice(i,1)}}
@@ -2552,10 +2557,12 @@ function damageEnemy(e,mult,kind,fixed,ign=0){
     b.swCount++;sfx('parry');popup(e.pos,'受け流された','g');ringFx(e.pos,'#ffffff',1.6,.25);const pl=b.pl;pl.state='hurt';pl.st=0;pl.vel=V3(Math.sin(pl.face),0,Math.cos(pl.face)).multiplyScalar(-5);e.atkCd=Math.min(e.atkCd,.25);e.face=angTo(e.pos,pl.pos);b.hitstop=.06;
     if(kind==='skill'||kind==='skill+')b.swCount++;
     return}
+  if(BS.cfg.queen&&queenDamage(e,kind))return;
   if(enemyDefend(e,kind))return;
   let dmg=fixed!=null?fixed:Math.max(1,Math.round((atkOf()*atkBuff()*mult*PLAYER_DMG-e.d.def*.5*(1-ign))*rnd(.9,1.1)));
   if(b.ails&&b.ails[curK()]&&b.ails[curK()].weak>0)dmg=Math.max(1,Math.round(dmg*.7));
-  if(e.d.immortal){/* 木人：ダメージ表示のみ */}else e.hp-=dmg;
+  if(b.cfg.queen){dmg=queenFloor(e,dmg);if(!dmg)return}
+  if(e.d.immortal){/* 木人：ダメージ表示のみ */if(e.type==='infected'){e.state='stagger';e.st=0;hideTele(e)}}else e.hp-=dmg;
   if(e.sub==='heal'&&e.state==='windup'){e.healDmg=(e.healDmg||0)+dmg;const pc=Math.min(100,Math.floor(e.healDmg/(e.mhp*.06)*100));if(pc<100)popup(e.pos,'阻止 '+pc+'%','g');if(e.healDmg>=e.mhp*.06){e.state='stagger';e.st=0;e.sub=null;e.fastWind=0;e.chain=0;banner('詠唱を 阻止した！',1100);sfx('parry')}}
   P.sp=Math.min(100,P.sp+(kind.startsWith('skill')||kind==='magic'||kind==='shot'?0:5));
   const crit=kind==='counter'||kind.startsWith('skill');
@@ -3390,7 +3397,7 @@ function askCarryCode(){return new Promise(res=>{
 })}
 function applyCarry(d){
   newGame();
-  if(!d){d={lv:35,exp:0,mhp:390,mmp:96,batk:batkFor(35),bdef:40,w:'proto',ar:'iron',sh:'iron',g:8000,it:{herb:10,hiherb:6,ether:5,revive:2,panacea:1},sk:Object.keys(SKILLS),mg:Object.keys(MAGICS),es:'soukou',em:'fire',pts:0,b:null,c:null,nick:'バニカ'}}
+  if(!d){d={lv:35,exp:0,mhp:390,mmp:96,batk:batkFor(35),bdef:40,w:'proto',ar:'iron',sh:'iron',g:8000,it:{herb:10,hiherb:6,ether:5,revive:2,panacea:1},sk:Object.keys(SKILLS).filter(k=>k!=='kanshou'),mg:Object.keys(MAGICS),es:'soukou',em:'fire',pts:0,b:null,c:null,nick:'バニカ'}}
   Object.assign(P,{lv:d.lv,exp:d.exp||0,mhp:d.mhp,hp:d.mhp,mmp:d.mmp,mp:d.mmp,batk:d.batk,bdef:d.bdef,weapon:d.w||'father',wbag:d.wb||[],armor:d.ar||'none',shield:d.sh||'none',gold:d.g||0,
     items:Object.assign({herb:0,hiherb:0,ether:0},d.it||{}),skills:d.sk||['soukou'],magics:d.mg||[],eqSkill:d.es||'soukou',eqMagic:d.em||null,pts:d.pts||0});
   for(const[k,c]of[['banica',d.b],['celes',d.c]]){const a=joinMember(k);if(c)Object.assign(a,{lv:c.lv,exp:c.exp||0,mhp:c.mhp,hp:c.mhp,mmp:c.mmp,mp:c.mmp,def:c.def,pts:c.pts||0,magics:c.mg||a.magics,slots:c.sl||a.slots,sel:0})}
@@ -3529,8 +3536,7 @@ async function p3Throne(){
 }
 
 /* ================= 第三部 ノルヴェルト編・前半（第二章〜第四章） ================= */
-const P3MAPS={"nfield": ["峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰", "峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰", "峰峰峰峰峰峰雪峰雪峰峰雪峰雪雪峰峰雪雪樹峰雪雪雪雪峰峰雪峰峰峰峰雪峰峰峰", "峰峰峰雪雪雪雪雪雪雪雪雪樹雪雪雪雪雪雪雪雪雪雪樹雪雪雪雪峰峰峰雪雪峰峰峰", "峰峰雪樹雪雪雪雪雪雪雪雪樹雪雪雪雪雪雪樹雪雪樹雪雪雪樹樹樹山雪雪樹峰峰峰", "峰峰雪雪樹雪樹雪雪雪雪樹雪雪雪雪雪樹雪雪雪雪雪雪雪雪雪雪雪道雪雪雪雪峰峰", "峰峰雪雪雪雪V雪雪樹雪雪雪雪雪雪雪雪雪樹雪雪雪雪雪雪雪雪雪道雪雪雪雪峰峰", "峰峰峰雪樹雪道雪雪雪雪雪雪雪雪雪雪雪雪雪雪雪雪雪雪雪雪雪雪道雪雪雪雪峰峰", "峰峰雪雪雪雪道雪雪雪樹雪雪雪雪樹雪雪雪雪雪雪樹雪雪雪雪雪雪道雪雪雪峰峰峰", "峰峰峰雪雪雪道道道道道道道道道道道道K道道道道道道道道道道道雪雪樹樹峰峰", "峰峰雪雪樹雪雪雪雪雪雪雪雪雪雪雪雪雪道樹雪雪雪雪樹雪雪雪雪雪雪雪樹雪峰峰", "峰峰雪雪雪雪雪樹雪雪雪雪雪雪雪樹樹雪道雪雪雪樹雪雪雪雪樹雪雪雪雪雪雪峰峰", "峰峰峰雪樹雪樹樹雪雪雪雪雪雪雪雪雪雪道雪雪雪雪雪雪雪雪雪雪樹雪雪樹雪峰峰", "峰峰雪雪雪雪雪雪雪雪雪雪樹雪雪雪雪雪道雪雪樹雪雪樹雪樹雪雪雪雪雪雪峰峰峰", "峰峰峰雪雪雪雪雪雪雪雪雪樹樹雪樹雪雪道雪雪雪雪雪雪雪雪雪雪雪雪雪雪雪峰峰", "峰峰雪雪雪雪雪雪雪雪樹雪雪雪雪雪雪雪道雪雪雪雪樹雪雪雪雪雪雪樹雪雪樹峰峰", "峰峰雪雪樹雪雪樹雪雪雪雪雪雪雪雪雪雪道雪雪雪樹雪樹雪樹雪雪雪雪雪樹雪峰峰", "峰峰雪雪雪雪雪雪樹雪雪雪雪雪雪雪樹樹道雪雪樹雪樹雪樹雪雪雪雪雪雪雪雪峰峰", "峰峰峰雪雪樹雪雪雪雪樹雪雪雪雪雪雪樹道雪雪雪雪雪雪雪雪雪雪樹樹雪雪雪峰峰", "峰峰峰雪樹雪樹雪雪雪雪雪雪雪雪樹雪雪道雪樹雪雪雪雪雪雪雪雪雪雪雪雪峰峰峰", "~~~~~~雪雪樹雪雪雪雪樹道道道道道樹雪雪雪樹雪樹雪雪雪雪雪雪雪雪峰峰", "~~~~~~~~~~~~雪uuu峰樹峰雪峰峰峰雪雪~~~~~~~~~~~", "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~", "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"], "ntown": ["WWWWWWWWWWWQQQQQQQQQQWWWWWWWWWWW", "W雪雪雪雪雪雪雪雪雪雪QQQQQQQQQQ雪雪雪雪雪雪雪雪雪雪W", "W雪WWWWWWW雪雪QQQQQQQQQQ雪雪WWWWWWW雪W", "W雪W_____W雪雪QQQQ門門QQQQ雪雪Wbb_bbW雪W", "W雪WCCCCCW雪雪雪雪雪雪道道雪雪雪雪雪雪WCCCCCW雪W", "W雪W_____W雪雪雪雪雪雪道道雪雪雪雪雪雪W_____W雪W", "W雪WWWDWWW雪雪雪雪灯雪道道雪灯雪雪雪雪WWWDWWW雪W", "W雪雪雪雪雪雪雪雪雪雪雪雪雪雪道道雪雪雪雪雪雪雪雪雪雪雪雪雪雪W", "W雪雪雪雪道道道道道道道道道道道道道道道道道道道道道道雪雪雪雪W", "W雪雪雪雪雪雪雪雪雪雪雪雪雪雪道道雪雪雪雪雪雪雪雪雪雪雪雪雪雪W", "W雪雪雪雪雪屋雪屋雪屋雪雪雪雪道道雪雪雪雪屋雪屋雪屋雪雪雪雪雪W", "W雪雪雪雪雪雪雪雪雪雪雪雪雪雪w道雪雪雪雪雪雪雪雪雪雪雪雪雪雪W", "W雪雪雪雪雪雪雪雪雪雪雪雪灯雪道道雪灯雪雪雪雪雪雪雪雪雪雪雪雪W", "W雪雪雪雪道道道道道道道道道道道道道道道道道道道道道道雪雪雪雪W", "W雪雪雪雪雪雪雪雪雪雪雪雪雪雪道道雪雪雪雪雪雪雪雪雪雪雪雪雪雪W", "W雪WWWWWWW雪WWWWW道道雪雪雪雪雪雪WWWWWWW雪W", "W雪W本本_本本W雪W___W道道雪雪雪雪雪雪W_____W雪W", "W雪WCCCCCW雪WCCCW道道雪氷氷氷氷氷WCCCCCW雪W", "W雪W_____W雪W___W道道雪氷湖湖湖氷W_____W雪W", "W雪WWWDWWW雪WWDWW道道雪氷湖湖湖氷WWWDWWW雪W", "W雪雪雪雪雪雪雪雪雪雪雪雪雪雪道道雪氷湖湖湖氷雪雪雪雪雪雪雪雪W", "W雪雪雪雪雪雪雪雪雪雪雪雪灯雪道道雪氷氷氷氷氷灯雪雪雪雪雪雪雪W", "W雪雪雪雪雪雪雪雪雪雪雪雪雪雪道道雪雪雪雪雪雪雪雪雪雪雪雪雪雪W", "WWWWWWWWWWWWWWW道道WWWWWWWWWWWWWWW"], "nvillage": ["樹樹樹樹樹樹樹樹樹樹樹樹樹樹樹樹樹樹樹樹", "樹雪雪樹雪雪雪雪雪雪雪雪雪雪雪雪雪雪雪樹", "樹雪雪WWWWW雪雪雪雪WWWWWW雪樹", "樹雪雪W___W雪雪雪樹Wb__bW雪樹", "樹雪雪WCCCW雪雪雪雪WCCCCW雪樹", "樹雪雪W___W雪雪雪雪W____W雪樹", "樹雪雪WWDWW雪雪雪雪WWWDWW雪樹", "樹雪雪雪雪道道道道道道道道道道雪雪雪雪樹", "樹雪雪雪雪雪雪雪雪道道雪雪雪雪雪雪雪雪樹", "樹雪雪雪雪w雪雪雪道道雪雪雪雪雪雪雪雪樹", "樹雪雪雪雪雪雪雪雪道道雪雪雪雪樹雪樹雪樹", "樹雪雪雪雪雪雪雪雪道道雪雪雪雪雪雪雪雪樹", "樹雪雪雪雪雪雪雪雪道道雪雪雪雪雪雪雪雪樹", "樹樹樹樹樹樹樹樹樹道道樹樹樹樹樹樹樹樹樹"], "starhill": ["樹樹樹樹樹樹樹樹樹樹樹樹樹樹樹樹樹", "樹樹樹樹樹樹樹樹樹雪樹雪樹雪雪樹樹", "樹樹樹樹樹樹樹雪樹樹樹樹樹樹雪樹樹", "樹樹雪雪雪雪雪雪雪樹雪雪雪雪樹雪樹", "樹雪雪雪雪雪雪雪雪雪雪雪雪雪雪雪樹", "樹雪雪雪雪雪雪雪雪雪雪雪雪雪雪雪樹", "樹雪雪雪雪雪雪雪雪雪雪雪雪雪雪雪樹", "樹雪雪雪雪雪雪雪雪雪雪雪雪雪雪雪樹", "樹雪雪雪雪雪雪雪雪雪雪雪雪雪雪雪樹", "樹雪雪雪雪雪雪雪樹雪雪雪雪雪雪雪樹", "樹雪雪雪雪雪雪雪樹雪雪雪雪雪雪雪樹"]};
-
+const P3MAPS={"nfield": ["峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰", "峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰峰", "峰峰峰峰峰峰雪峰雪峰峰雪峰雪雪峰峰雪雪樹峰雪雪雪雪峰峰雪峰峰峰峰雪峰峰峰", "峰峰峰雪雪雪雪雪雪雪雪雪樹雪雪雪雪雪雪雪雪雪雪樹雪雪雪雪峰峰峰雪雪峰峰峰", "峰峰雪樹雪雪雪雪雪雪雪雪樹雪雪雪雪雪雪樹雪雪樹雪雪雪樹樹樹山雪雪樹峰峰峰", "峰峰雪雪樹雪樹雪雪雪雪樹雪雪雪雪雪樹雪雪雪雪雪雪雪雪雪雪雪道雪雪雪雪峰峰", "峰峰雪雪雪雪V雪雪樹雪雪雪雪雪雪雪雪雪樹雪雪雪雪雪雪雪雪雪道雪雪雪雪峰峰", "峰峰峰雪樹雪道雪雪雪雪雪雪雪雪雪雪雪雪雪雪雪雪雪雪雪雪雪雪道雪雪雪雪峰峰", "峰峰雪雪雪雪道雪雪雪樹雪雪雪雪樹雪雪雪雪雪雪樹雪雪雪雪雪雪道雪雪雪峰峰峰", "峰峰峰雪雪雪道道道道道道道道道道道道K道道道道道道道道道道道雪雪樹樹峰峰", "峰峰雪雪樹雪雪雪雪雪雪雪雪雪雪雪雪雪道樹雪雪雪雪樹雪雪雪雪雪雪雪樹雪峰峰", "峰峰雪雪雪雪雪樹雪雪雪雪雪雪雪樹樹雪道雪雪雪樹雪雪雪雪樹雪雪雪雪雪雪峰峰", "峰峰峰雪樹雪樹樹雪雪雪雪雪雪雪雪雪雪道雪雪雪雪雪雪雪雪雪雪樹雪雪樹雪峰峰", "峰峰雪雪雪雪雪雪雪雪雪雪樹雪雪雪雪雪道雪雪樹雪雪樹雪樹雪雪雪雪雪雪峰峰峰", "峰峰峰雪雪雪雪雪雪雪雪雪樹樹雪樹雪雪道雪雪雪雪雪雪雪雪雪雪雪雪花雪雪峰峰", "峰峰雪雪雪雪雪雪雪雪樹雪雪雪雪雪雪雪道雪雪雪雪樹雪雪雪雪雪雪樹雪雪樹峰峰", "峰峰雪雪樹雪雪樹雪雪雪雪雪雪雪雪雪雪道雪雪雪樹雪樹雪樹雪雪雪雪雪樹雪峰峰", "峰峰雪雪雪雪雪雪樹雪雪雪雪雪雪雪樹樹道雪雪樹雪樹雪樹雪雪雪雪雪雪雪雪峰峰", "峰峰峰雪雪樹雪雪雪雪樹雪雪雪雪雪雪樹道雪雪雪雪雪雪雪雪雪雪樹樹雪雪雪峰峰", "峰峰峰雪樹雪樹雪雪雪雪雪雪雪雪樹雪雪道雪樹雪雪雪雪雪雪雪雪雪雪雪雪峰峰峰", "~~~~~~雪雪樹雪雪雪雪樹道道道道道樹雪雪雪樹雪樹雪雪雪雪雪雪雪雪峰峰", "~~~~~~~~~~~~雪uuu峰樹峰雪峰峰峰雪雪~~~~~~~~~~~", "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~", "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"], "ntown": ["WWWWWWWWWWWQQQQQQQQQQWWWWWWWWWWW", "W雪雪雪雪雪雪雪雪雪雪QQQQQQQQQQ雪雪雪雪雪雪雪雪雪雪W", "W雪WWWWWWW雪雪QQQQQQQQQQ雪雪WWWWWWW雪W", "W雪W_____W雪雪QQQQ門門QQQQ雪雪Wbb_bbW雪W", "W雪WCCCCCW雪雪雪雪雪雪道道雪雪雪雪雪雪WCCCCCW雪W", "W雪W_____W雪雪雪雪雪雪道道雪雪雪雪雪雪W_____W雪W", "W雪WWWDWWW雪雪雪雪灯雪道道雪灯雪雪雪雪WWWDWWW雪W", "W雪雪雪雪雪雪雪雪雪雪雪雪雪雪道道雪雪雪雪雪雪雪雪雪雪雪雪雪雪W", "道道道道道道道道道道道道道道道道道道道道道道道道道道道雪雪雪雪W", "W雪雪雪雪雪雪雪雪雪雪雪雪雪雪道道雪雪雪雪雪雪雪雪雪雪雪雪雪雪W", "W雪雪雪雪雪屋雪屋雪屋雪雪雪雪道道雪雪雪雪屋雪屋雪屋雪雪雪雪雪W", "W雪雪雪雪雪雪雪雪雪雪雪雪雪雪w道雪雪雪雪雪雪雪雪雪雪雪雪雪雪W", "W雪雪雪雪雪雪雪雪雪雪雪雪灯雪道道雪灯雪雪雪雪雪雪雪雪雪雪雪雪W", "W雪雪雪雪道道道道道道道道道道道道道道道道道道道道道道雪雪雪雪W", "W雪雪雪雪雪雪雪雪雪雪雪雪雪雪道道雪雪雪雪雪雪雪雪雪雪雪雪雪雪W", "W雪WWWWWWW雪WWWWW道道雪雪雪雪雪雪WWWWWWW雪W", "W雪W本本_本本W雪W___W道道雪雪雪雪雪雪W_____W雪W", "W雪WCCCCCW雪WCCCW道道雪氷氷氷氷氷WCCCCCW雪W", "W雪W_____W雪W___W道道雪氷湖湖湖氷W_____W雪W", "W雪WWWDWWW雪WWDWW道道雪氷湖湖湖氷WWWDWWW雪W", "W雪雪雪雪雪雪雪雪雪雪雪雪雪雪道道雪氷湖湖湖氷雪雪雪雪雪雪雪雪W", "W雪雪雪雪雪雪雪雪雪雪雪雪灯雪道道雪氷氷氷氷氷灯雪雪雪雪雪雪雪W", "W雪雪雪雪雪雪雪雪雪雪雪雪雪雪道道雪雪雪雪雪雪雪雪雪雪雪雪雪雪W", "WWWWWWWWWWWWWWW道道WWWWWWWWWWWWWWW"], "nvillage": ["樹樹樹樹樹樹樹樹樹樹樹樹樹樹樹樹樹樹樹樹", "樹雪雪樹雪雪雪雪雪雪雪雪雪雪雪雪雪雪雪樹", "樹雪雪WWWWW雪雪雪雪WWWWWW雪樹", "樹雪雪W___W雪雪雪樹Wb__bW雪樹", "樹雪雪WCCCW雪雪雪雪WCCCCW雪樹", "樹雪雪W___W雪雪雪雪W____W雪樹", "樹雪雪WWDWW雪雪雪雪WWWDWW雪樹", "樹雪雪雪雪道道道道道道道道道道雪雪雪雪樹", "樹雪雪雪雪雪雪雪雪道道雪雪雪雪雪雪雪雪樹", "樹雪雪雪雪w雪雪雪道道雪雪雪雪雪雪雪雪樹", "樹雪雪雪雪雪雪雪雪道道雪雪雪雪樹雪樹雪樹", "樹雪雪雪雪雪雪雪雪道道雪雪雪雪雪雪雪雪樹", "樹雪雪雪雪雪雪雪雪道道雪雪雪雪雪雪雪雪樹", "樹樹樹樹樹樹樹樹樹道道樹樹樹樹樹樹樹樹樹"], "starhill": ["樹樹樹樹樹樹樹樹樹樹樹樹樹樹樹樹樹", "樹樹樹樹樹樹樹樹樹雪樹雪樹雪雪樹樹", "樹樹樹樹樹樹樹雪樹樹樹樹樹樹雪樹樹", "樹樹雪雪雪雪雪雪雪樹雪雪雪雪樹雪樹", "樹雪雪雪雪雪雪雪雪雪雪雪雪雪雪雪樹", "樹雪雪雪雪雪雪雪雪雪雪雪雪雪雪雪樹", "樹雪雪雪雪雪雪雪雪雪雪雪雪雪雪雪樹", "樹雪雪雪雪雪雪雪雪雪雪雪雪雪雪雪樹", "樹雪雪雪雪雪雪雪雪雪雪雪雪雪雪雪樹", "樹雪雪雪雪雪雪雪樹雪雪雪雪雪雪雪樹", "樹雪雪雪雪雪雪雪樹雪雪雪雪雪雪雪樹"]};
 const N_=(ex='通常')=>'ネメティス:'+ex;
 Object.assign(BGM_FILES,{nfield:'nfield.mp3'});
 /* ---- 雪のタイル ---- */
@@ -3924,11 +3930,1113 @@ async function p3Nemetis(){
   await say(C_('困り'),'……おかしい。傷は 治っているのに、魔力の 異常が 消えません。');
   await say(J_('思案'),'どういうことだ？');
   await say(C_('真剣'),'……まだ 分かりません。とにかく 街へ 戻りましょう。');
+  await say('','ジルは バニカを 支えて、山を 下り始めた。');
+  setStep(71);healParty();F.trail=[];updateHUD();saveGame();
+}
+/* 下山：途中の 洞窟で 覇者の剣を 拾える。麓に着くと 診療所の 場面 */
+WEAPONS.haja={name:'覇者の剣',atk:58};
+PAINT['剣']=(g,f,v)=>{PAINT['岩'](g,0,v);fill(g,'#2a2632',4,6,8,10);fill(g,'#e8eef8',7,1,2,11);fill(g,'#ffffff',7,1,1,11);fill(g,'#e3b33a',5,10,6,2);fill(g,'#7a1020',7,12,2,2);if(f){px(g,6,3,'#fff6c0');px(g,10,6,'#fff6c0')}};
+SOLID.add('剣');ANIM.add('剣');
+{const g=BASE.nmt2.map(r=>r.split(''));const d=MAPMETA.nmt2.diary;const[x,y]=farCell(g,d[0],d[1],c=>c==='雪');g[y][x]='剣';MAPMETA.nmt2.sword=[x,y];BASE.nmt2=g.map(r=>r.join(''))}
+TILEACT['剣']=async()=>{
+  if(S.flags.haja){await say('','剣が 突き立っていた 岩の 割れ目だ。');return}
+  if(st()<71){await say('','岩の 割れ目の 奥で、何かが 光っている。\n……今は 先を 急ごう。');return}
+  await say('','岩の 割れ目の 奥に、古い 剣が 突き立っている。\n柄には、王冠の 紋章が 刻まれていた。');
+  await say(C_('真剣'),'……すごい 魔力。誰かが、ここに 封じていたのでしょうか。');
+  sfx('chest');S.flags.haja=1;P.wbag=P.wbag||[];
+  await say('','ジルは「覇者の剣」を 手に入れた！（攻撃力 58）');
+  const i=await selectList({title:'覇者の剣を 装備する？',items:[{label:'装備する'},{label:'やめておく'}],cancel:false});
+  if(i===0){if(P.weapon)P.wbag.push(P.weapon);P.weapon='haja';sfx('ok');await say('','覇者の剣を 装備した！（攻撃力 '+atkOf()+'）')}else P.wbag.push('haja');
+  updateHUD();saveGame();
+};
+{const base=MAPENTER.ntown;MAPENTER.ntown=async()=>{
+  if(st()===71&&!S.flags.descended){S.flags.descended=1;F.moving=false;
+    await say('','ネメティスの 魔力は、消滅したように 見えた。\nしかし――');
+    await say('','山の 麓の 診療所では、疫病の 患者たちが 今も 苦しんでいた。');
+    await say('医師','……勇者殿。患者たちの 熱が、まだ 下がらないのです。');
+    await say(C_('真剣'),'……バニカを 休ませましょう。宿屋へ 戻りましょう。');
+    updateHUD();saveGame();return}
+  return base&&base()}}
+
+/* ================= 第三部 ノルヴェルト編・後半（第五章〜第七章） ================= */
+const P3MAPS2={"nroom": ["WWWWWWWWW", "W_b___b_W", "W_______W", "W_______W", "W_______W", "WWWWDWWWW"], "nold": ["樹樹樹樹樹樹樹樹樹樹樹樹樹樹樹樹樹樹樹樹樹樹", "樹雪WWWWWWW樹雪雪WWWWWWW雪雪雪", "樹雪W__祭__W樹雪雪W本本_棚本W雪雪樹", "樹雪W_____W雪雪雪W_____W雪雪雪", "樹雪W_____W雪雪雪W_____W雪雪雪", "樹雪W_____W雪雪雪W_____W雪雪雪", "樹雪WWWDWWW雪雪雪WWWDWWW雪雪雪", "樹道道道道道道道道道道道道道道道道道道道道道", "樹雪雪雪雪雪雪WWWDWWWW雪雪雪雪雪雪樹", "樹雪雪雪雪雪雪W______W雪雪雪雪雪雪雪", "樹雪雪雪雪雪雪W______W雪雪雪雪樹雪樹", "樹雪雪雪雪樹雪W_机__本_W雪樹雪雪雪雪雪", "樹雪雪樹雪雪雪WWWWWWWW雪雪雪雪雪雪樹", "樹樹樹樹樹樹樹樹樹樹樹樹樹樹樹樹樹樹樹樹樹樹"], "ngrave": ["樹樹樹樹樹樹樹樹樹樹樹樹樹樹樹", "樹雪雪雪雪雪雪雪雪雪雪雪雪雪樹", "樹雪雪雪樹雪雪雪雪雪雪雪雪雪樹", "樹雪雪墓雪墓雪雪雪墓雪墓雪雪樹", "樹雪雪雪雪樹雪墓雪雪雪雪雪雪樹", "樹雪雪雪雪雪雪道雪樹雪雪雪雪樹", "樹雪雪墓雪雪雪道雪雪雪墓雪雪樹", "樹雪雪樹雪雪雪道樹雪雪雪雪雪樹", "樹雪雪雪雪雪雪道雪雪雪雪雪雪樹", "樹雪雪雪雪雪雪道雪雪雪雪雪雪樹"]};
+Object.assign(PAINT,{
+  '祭':(g,f,v)=>{fill(g,'#8a8494');fill(g,'#c8c2d4',2,6,12,8);fill(g,'#e8e4f0',1,5,14,2);fill(g,'#e3b33a',7,0,2,6);fill(g,'#e3b33a',5,2,6,2)},
+  '棚':(g,f,v)=>{PAINT['本'](g,0,v);fill(g,'#d8d0b8',3,1,10,3);fill(g,'#d8d0b8',2,11,8,3)},
+  '机':(g,f,v)=>{fill(g,'#6a4a2a');fill(g,'#8a6038',0,2,16,8);fill(g,'#3a2a18',1,10,2,6);fill(g,'#3a2a18',13,10,2,6);fill(g,'#e8e0c8',3,3,6,4);fill(g,'#7a3aa8',11,3,3,4)},
+  '墓':(g,f,v)=>{PAINT['雪'](g,0,v);fill(g,'#9aa0ae',5,4,6,11);fill(g,'#b8bec8',6,4,4,10);fill(g,'#9aa0ae',3,6,10,3);fill(g,'#b8bec8',4,6,8,2);fill(g,'#ffffff',5,3,6,1);fill(g,'#ffffff',4,14,8,2)},
+  '花':(g,f,v)=>{PAINT['雪'](g,0,v);fill(g,'#3a7a4a',7,8,2,6);fill(g,'#3a7a4a',5,11,3,1);for(const[x,y]of[[8,5],[6,7],[10,7],[8,8]])fill(g,'#ffffff',x-1,y-1,3,3);fill(g,'#ffe070',7,6,2,2)},
+});
+for(const c of'祭棚机墓花')SOLID.add(c);
+Object.assign(BASE,{nroom:P3MAPS2.nroom,nold:P3MAPS2.nold,ngrave:P3MAPS2.ngrave});
+Object.assign(MAPDEF,{
+  nroom:{name:'宿屋の 部屋',fill:'W',music:()=>st()===76?'banica':null},
+  nold:{name:'王都 旧市街',fill:'樹',music:()=>null,tint:'snowlite'},
+  ngrave:{name:'王都の 外れの 墓地',fill:'樹',music:()=>null,tint:'snowlite'},
+});
+/* 部屋や墓地は 静かに（曲なし） */
+{const base=MAPDEF.ntown.music;MAPDEF.ntown.music=()=>st()>=72&&st()<=80?(st()===73?'town':st()===77?'tension':null):base()}
+
+/* ---- 小道具 ---- */
+const P3={};
+function npcSet(list){F.npcs=F.npcs.filter(n=>!n.p3t);for(const n of list){n.p3t=1;n.hx=n.x;n.hy=n.y;n.mt=0;n.moving=false;n.wt=n.wt||99;F.npcs.push(n)}}
+function npcDel(id){F.npcs=F.npcs.filter(n=>n.id!==id)}
+function banicaLeave(){if(P.party&&P.party.banica)P.party.banica.joined=0;updateHUD()}
+function banicaBack(){if(P.party&&P.party.banica){P.party.banica.joined=1;const a=P.party.banica;a.hp=a.mhp;a.mp=a.mmp}updateHUD()}
+async function whiteOut(ms=1500){const f=$('#fade');f.style.background='#ffffff';await fadeTo(1,ms)}
+async function whiteIn(ms=1500){await fadeTo(0,ms);$('#fade').style.background=''}
+/* 曲が 最後まで 流れ終わるのを 待つ（ループさせない） */
+async function waitSongEnd(name,maxMs=200000){
+  const a=AU.files&&AU.files[name];
+  if(!a||AU.muted||a.paused){await sleep(Math.min(maxMs,a&&isFinite(a.duration)?Math.max(4000,(a.duration-(a.currentTime||0))*1000):12000));return}
+  a.loop=false;await new Promise(res=>{const t0=Date.now();const iv=setInterval(()=>{if(a.ended||a.paused||Date.now()-t0>maxMs){clearInterval(iv);res()}},250)});a.loop=true;
+}
+/* 古文献：セレスが 読んでいる風に 一行ずつ */
+function showBook(title,lines){return new Promise(res=>{
+  const w=document.createElement('div');w.className='win';
+  w.style.cssText='position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:58;width:min(calc(100% - 32px),620px);max-height:calc(100% - 24px);overflow:auto;padding:18px 22px;box-sizing:border-box;background:#efe4c8;color:#3a2a18;border:3px solid #8a6a3a;font-size:15px;line-height:1.8';
+  w.innerHTML=`<div style="text-align:center;font-weight:bold;letter-spacing:.2em;margin-bottom:8px">${title}</div><div class="bd"></div><div class="nx" style="text-align:right;opacity:0;margin-top:6px">▼</div>`;
+  $('#app').appendChild(w);const bd=w.querySelector('.bd');let i=0,done=false;
+  const step=()=>{if(i<lines.length){const p=document.createElement('p');p.style.cssText='margin:0 0 6px;opacity:0;transition:opacity .9s';p.textContent=lines[i++];bd.appendChild(p);requestAnimationFrame(()=>p.style.opacity=1);sfx('text');t=setTimeout(step,2200)}else{done=true;w.querySelector('.nx').style.opacity=1}};
+  let t=setTimeout(step,500);
+  const h=a=>{if(a!=='ok'&&a!=='cancel')return;if(!done){clearTimeout(t);step();return}popUI(h);w.remove();res()};pushUI(h);
+  w.addEventListener('pointerdown',e=>{e.stopPropagation();h('ok')});
+})}
+
+/* ---- 目的 ---- */
+{const base=p3Objective;p3Objective=function(s){
+  const r=['r1','r2','r3','r4'].filter(k=>S.flags[k]).length;
+  return({71:S.flags.descended?'宿屋へ 戻ろう':'バニカを 支えて 山を 下り、王都へ 戻ろう'+(S.flags.haja?'':'（途中の 洞窟で 何かが 光っている）'),72:'……',73:'バニカと 街を 歩こう（宿屋に 戻ると 一日が 終わる）',
+    74:S.leader==='celes'?`（セレス）解呪の 手がかりを 探す（${r}/4）　王立図書館・旧市街（王都の 西）`:'……',
+    75:S.flags.herb?'雪割草を 宿屋へ 持ち帰ろう':'熱に 効く 雪割草を 探そう（雪原の 東の 崖）',76:'……',
+    77:'住民を 避難させろ！（のこり '+(P3.left??5)+'人）　感染者には 近づかない',78:'……',79:'……',80:'墓地を 出よう'})[s]||base(s)}}
+
+/* ---- 移動・建物 ---- */
+{const base=p3OnStep;p3OnStep=function(m,x,y){
+  if(m.id==='ntown'&&x<=0){run(async()=>{if(S.leader==='celes'||st()>=74)await goMap('nold',m.w?20:20,7,'left');else await say('','古い 旧市街だ。今は 用はない。')});return true}
+  if(m.id==='nold'&&x>=m.w-1){run(()=>goMap('ntown',1,8,'right'));return true}
+  if(m.id==='nroom'&&y>=m.h-1){run(()=>goMap('ntown',5,7,'down'));return true}
+  if(m.id==='ngrave'&&y>=m.h-1){run(()=>say('','……'));return true}
+  if(m.id==='ntown'&&st()===77&&P3.left===0&&x>=13&&x<=18&&y>=8&&y<=13){run(()=>p3Plaza());return true}
+  return base(m,x,y)}}
+TILEACT['祭']=async()=>{if(S.leader==='celes'&&st()===74&&!S.flags.r2){await p3Research('r2');return}await say('','古い 教会の 祭壇だ。')};
+TILEACT['棚']=async()=>{if(S.leader==='celes'&&st()===74&&!S.flags.r3){await p3Research('r3');return}await say('','捨てられた 診療記録が 積まれている。')};
+TILEACT['机']=async()=>{if(S.leader==='celes'&&st()===74&&!S.flags.r4){await p3Research('r4');return}await say('','呪術の 研究に 使われていた 机だ。')};
+TILEACT['花']=async()=>{if(st()===75&&!S.flags.herb){sfx('chest');S.flags.herb=1;updateHUD();await say('','雪割草を 摘んだ。\n白い 花びらが、雪の中で 小さく 光っている。');return}await say('','雪割草が 咲いている。')};
+TILEACT['墓']=async()=>{await say('','雪に 覆われた 墓標だ。')};
+NPCS.nold=[{id:'noM',spr:'oldwoman',x:18,y:9,wander:1,cond:()=>S.leader!=='celes',talk:async()=>say('老婆','旧市街は もう 誰も 住んじゃいないよ。')}];
+NPCS.ngrave=[];NPCS.nroom=[];
+/* 王都の人の 反応を 差し替え */
+{const L=id=>NPCS.ntown.find(n=>n.id===id);
+  const inn=L('nInn');inn.talk=async()=>p3Inn2();
+  const lib=L('nLib');const lt=lib.talk;lib.talk=async()=>{if(S.leader==='celes'&&st()===74){await p3LibraryCeles();return}return lt()};
+  const mk=L('nM1');const mt=mk.talk;mk.talk=async()=>{if(st()===73&&!S.flags.gloves){await p3Gloves();return}if(st()===75&&!S.flags.herb){await talk('露店の 商人',['熱に 効く 薬草かい？','それなら「雪割草」だ。雪原の 東、崖の そばに 咲いてるよ。','……連れの 魔法使いの お嬢ちゃん、早く 良くなると いいな。']);return}return mt()};
+  const cf=L('nCafe');const ct=cf.talk;cf.talk=async()=>{if(st()===73){await say('喫茶店の 主人','お、この前の お二人さん。今日も 仲良しだね。');await say(B_('ツン'),'な、仲良しじゃ ないわよ！ ……ホットミルク 二つ！');return}return ct()};
+}
+async function p3Inn2(){
+  const s=st();
+  if(s===67){await say('宿屋の 主人','おや、お連れさんが 張り切ってましたよ。今夜は お代は 結構です。');await p3Date();return}
+  if(s===71){await say('宿屋の 主人','おかえりなさい。……お連れさん、顔色が 悪いですね。早く 休ませてあげてください。');await p3Ch5();return}
+  if(s===73){await p3Day3Night();return}
+  if(s===75&&S.flags.herb){await p3LastDay();return}
+  if(s>=72&&s<=76){await say('宿屋の 主人','……お連れさんの 具合は どうですか。何か あれば 言ってください。');return}
+  await inn('宿屋の 主人',40);
+}
+
+/* ======== 第五章 春を待つ魔女 ======== */
+async function p3Ch5(){
+  await fadeTo(1,800);stopMusic();setStep(72);banicaLeave();
+  await narrate(['――翌日。'],1500);
+  S.hideParty=1;F.time='day';loadMap('nroom',3,3,'up');
+  npcSet([{id:'qB',spr:'banica',x:2,y:1,dir:'down',lying:1,noblood:1,still:1},{id:'qC',spr:'celes',x:2,y:2,dir:'up'}]);updateHUD();
+  await fadeTo(0,800);
+  await say('','バニカは 熱を出して 寝込んでいた。');
+  await say(J_(),'……具合は？');
+  await say(B_(),'……ちょっと、だるいだけ。');
+  await say(J_(),'無理するなよ。');
+  await say(B_(),'……分かってるわよ。');
+  await say('','セレスが バニカを 診察する。');
+  await say(C_('真剣'),'……やはり、呪いに 似た 魔力が 残っています。');
+  await say(J_('思案'),'解けるのか？');
+  await say(C_('真剣'),'……解呪魔法を 調べてみます。');
+  await say(B_(),'……そんな 大げさに しなくても……');
+  await say(J_(),'ちゃんと 治そう。');
+  await say(B_(),'……うん。');
+  await say('','ジルが 水を 取りに 部屋を 出る。');
+  await fadeTo(1,500);F.px=4;F.py=4;F.dir='down';await sleep(200);
+  const c=F.npcs.find(n=>n.id==='qC');if(c){c.dir='up'}
+  await fadeTo(0,500);
+  await say('','バニカは セレスを 見る。');
+  await say(B_(),'……ねえ、セレス。');
+  await say(C_(),'何ですか？');
+  await say(B_(),'……私、大丈夫だよね？');
+  await say('','セレスは 少しだけ 言葉に 詰まる。');
+  await say(C_('困り'),'……今は、休みましょう。');
   await fadeTo(1,1200);
-  await narrate(['ジルは バニカを 支えて 山を 下りた。','ネメティスの 魔力は、消滅したように 見えた。','しかし――','山の 麓の 診療所では、疫病の 患者たちが 今も 苦しんでいた。'],2700);
-  setStep(71);healParty();F.time='day';loadMap('ntown',26,5,'up');updateHUD();await fadeTo(0,900);saveGame();
-  await say('医師','……患者たちの 熱が、まだ 下がらないのです。');
-  await say('','（ノルヴェルト編・前半は ここまで。次は 後半 ― 制作中）');
+  /* 三日目 */
+  await narrate(['三日目――'],1600);
+  setStep(73);banicaBack();loadMap('ntown',5,5,'up');npcSet([{id:'qB',spr:'banica',x:4,y:5,dir:'right'}]);updateHUD();
+  await fadeTo(0,800);
+  await say('','朝。ジルが 宿屋の 食堂に 降りると、バニカが 普通に 食事を している。');
+  await say(B_(),'あっ、ジル！ おはよう！');
+  await say(J_('驚き'),'……バニカ！？');
+  await say(B_('怒り'),'何よ、その顔！');
+  await say(J_(),'もう 起きて 大丈夫なのか？');
+  await say(B_(),'完全復活よ！ ほら！');
+  sfx('fire');await say('','バニカは 小さな 炎を 指先に 灯す。');
+  await say(B_('ツン'),'ふふん！ バニカ様が あんな 呪いに 負けるわけ ないじゃない！');
+  await say(J_(),'……よかった。');
+  await say(B_('驚き'),'……そんなに 心配してたの？');
+  await say(J_(),'……当たり前だろ。');
+  await say(B_('デレ'),'……そっか。');
+  npcDel('qB');S.hideParty=0;F.trail=[];saveGame();updateHUD();
+  await say(B_(),'ほら、せっかくだし 街に 行くわよ！ ……宿屋に 戻ったら、今日は おしまいね。');
+}
+async function p3Gloves(){
+  await say('露店の 商人','いらっしゃい！ 雪うさぎの 毛の 手袋は どうだい？ あったかいよ！');
+  await say(B_(),'……かわいい。');
+  await say(J_(),'欲しいのか？');
+  await say(B_('ツン'),'べ、別に！ ……ジルが 選んでくれるなら、つけてあげても いいけど。');
+  const i=await selectList({title:'どれにする？',items:[{label:'赤い 手袋'},{label:'白い 手袋'},{label:'黒い 手袋'}],cancel:false});
+  S.flags.gloves=i+1;sfx('chest');
+  await say(J_(),['赤いのが 似合うと 思う。','白いのが いいんじゃないか。','黒いの、大人っぽくて いいと 思う。'][i]);
+  await say(B_('デレ'),'……あったかい。……ありがと。');
+}
+async function p3Day3Night(){
+  await say(B_(),'……今日は、楽しかった。');
+  await say(J_(),'うん。明日も 調子が よかったら、また 歩こう。');
+  await say(B_('デレ'),'……うん。');
+  await fadeTo(1,1000);stopMusic();
+  await narrate(['しかし、その夜――','バニカは 再び 体調を 崩した。'],2400);
+  await p3Ch5Day5();
+}
+async function p3Ch5Day5(){
+  setStep(74);banicaLeave();S.hideParty=1;
+  await narrate(['五日目――'],1600);
+  loadMap('nroom',3,3,'up');npcSet([{id:'qB',spr:'banica',x:2,y:1,dir:'down',lying:1,noblood:1,still:1},{id:'qC',spr:'celes',x:4,y:2,dir:'left'}]);updateHUD();
+  await fadeTo(0,800);
+  await say('','バニカの 状態は、不安定に なっていった。');
+  await say('','体調が 良い日には 普通に 食事をし、冗談を 言い、ジルと 笑い合える。\n悪化する日には 高熱や 激しい 咳が 続き、立ち上がることも 難しい。');
+  await say('','セレスの 回復魔法で 一時的に 楽になっても、根本的には 治らない。');
+  await say(B_(),'……ごほっ、ごほっ……');
+  await say(J_('思案'),'……何か できることは ないのか。');
+  await say(C_('真剣'),'……私が 調べます。');
+  await say(J_(),'俺も 手伝う。');
+  await say(C_(),'ジルさんは、バニカの そばに いてあげてください。');
+  await say(J_(),'……分かった。');
+  await fadeTo(1,900);
+  S.leader='celes';S.hideParty=1;loadMap('ntown',5,7,'down');npcSet([]);updateHUD();
+  await fadeTo(0,800);
+  await say(C_('真剣'),'王立図書館、それから 西の 旧市街……古い 教会や、捨てられた 診療所も あると 聞きました。');
+  await say(C_('真剣'),'……必ず、方法が あるはずです。');
+  saveGame();
+}
+const RESEARCH={
+  r1:{where:'王立図書館',lines:[['','セレスは 解呪魔法の 書物を 片端から 読んでいく。'],[C_('真剣'),'この 術式なら……。'],['','希望は、まだ 残っていた。']]},
+  r2:{where:'古い 教会',lines:[['','古い 教会の 祭壇には、聖なる 解呪の 儀式が 刻まれていた。'],[C_('真剣'),'……これも 試す 価値が あります。'],['','だが、その 記録の 最後には「効果なし」と 書き添えられていた。'],[C_('困り'),'……これも、効かない……。']]},
+  r3:{where:'廃棄された 診療記録',lines:[['','捨てられた 診療所に、何十年も 前の 記録が 残されていた。'],['','「解呪：無効」「回復：一時的」「再発」「再発」「再発」――'],[C_('困り'),'……昔から、ずっと 同じ……。']]},
+  r4:{where:'呪術の 研究室',lines:[['','呪術の 研究室には、病を 呪いとして 解こうとした 跡が 残っている。'],['','研究は、途中で 途切れていた。'],[C_('困り'),'……なぜ……。'],[C_('困り'),'……なぜ、どれも 効かないんですか……。']]},
+};
+async function p3Research(k){
+  F.moving=false;for(const[n,t]of RESEARCH[k].lines)await say(n,t);
+  S.flags[k]=1;updateHUD();sfx('ok');
+  const n=['r1','r2','r3','r4'].filter(x=>S.flags[x]).length;
+  await say('',`（${RESEARCH[k].where}を 調べた　${n}/4）`);
+  if(n>=4)await p3CelesNight();
+}
+async function p3LibraryCeles(){
+  if(!S.flags.r1){await say('司書','神官さま……今日も 調べものですか。どうぞ、奥の 書架を。');await p3Research('r1');return}
+  await say('司書','……どうか、ご無理を なさらずに。');
+}
+async function p3CelesNight(){
+  await fadeTo(1,1000);
+  await narrate(['ある夜――'],1600);
+  F.time='night';loadMap('ntown',5,18,'up');npcSet([]);updateHUD();await fadeTo(0,800);
+  await say('','誰もいない 図書館で、セレスは 一冊の 古文献を 見つける。');
+  await say('','表紙には、かすれた 文字で こう 書かれていた。');
+  await say('','『ノルヴェト症候群について』');
+  await say('','セレスは ページを 開く――');
+  await fadeTo(1,300);await sleep(1800);
+  /* 翌朝：内容は 見せない */
+  F.time='day';S.leader=null;loadMap('nroom',4,4,'up');npcSet([{id:'qB',spr:'banica',x:2,y:1,dir:'down',lying:1,noblood:1,still:1},{id:'qC',spr:'celes',x:4,y:3,dir:'down'}]);
+  await narrate(['翌朝――'],1500);await fadeTo(0,800);
+  await say('','セレスは ほとんど 眠っていない 様子で 宿屋へ 戻ってきた。');
+  await say(J_(),'セレス、何か 分かったのか？');
+  await say(C_('困り'),'……まだ、確かなことは……');
+  await say(J_(),'……そうか。');
+  await say('','セレスは ジルの 顔を 直視できない。');
+  await fadeTo(1,1000);
+  /* 二人だけの会話 */
+  setStep(75);
+  await narrate(['ジルが 薬を 探しに 出かけた 午後――'],2000);
+  F.px=6;F.py=4;npcSet([{id:'qB',spr:'banica',x:2,y:1,dir:'down',lying:1,noblood:1,still:1},{id:'qC',spr:'celes',x:3,y:2,dir:'left'}]);
+  await fadeTo(0,800);
+  await say('','バニカの 部屋に、セレスが 入ってくる。');
+  await say(B_(),'……セレス。');
+  await say(C_(),'……はい。');
+  await say(B_(),'ちょっと、話が あるんだけど。');
+  await say(C_('真剣'),'……私も、お話ししたいことが あります。');
+  await say('','バニカは 静かに うなずく。');
+  await fadeTo(1,1600);await sleep(1200);
+  S.hideParty=1;loadMap('ntown',8,11,'left');npcSet([]);updateHUD();
+  await fadeTo(0,800);
+  await say(J_('思案'),'……熱に 効く 薬草……どこかに ないのか。');
+  saveGame();
+}
+async function p3LastDay(){
+  await fadeTo(1,900);setStep(76);
+  await narrate(['翌日――'],1500);
+  S.hideParty=1;loadMap('nroom',3,2,'left');npcSet([{id:'qB',spr:'banica',x:2,y:2,dir:'right'}]);updateHUD();
+  await fadeTo(0,800);
+  await say('','バニカの 体調は、また 良くなっていた。');
+  await say(J_(),'雪割草、取ってきたよ。煎じて 飲めば 熱に 効くって。');
+  await say(B_('デレ'),'……ふふ。ジルが 摘んできたの？ ……にがそう。');
+  await say(B_(),'ねえ、ジル。');
+  await say(J_(),'ん？');
+  await say(B_(),'……昨日の 約束、忘れてないでしょうね？');
+  await say(J_(),'昨日？');
+  await say(B_('怒り'),'ほら！ また 一緒に 出かけるって！');
+  await say(J_(),'忘れてないよ。');
+  await say(B_(),'……本当に？');
+  await say(J_(),'うん。どこに 行きたい？');
+  await say(B_(),'……海が いいな。');
+  await say(J_(),'海？');
+  await say(B_(),'うん。前に 一緒に 見た 海。');
+  await say(J_(),'……いいね。');
+  await say(B_('デレ'),'今度は、もっと ゆっくり したい。');
+  await say(J_(),'そうしよう。');
+  await say('','バニカは 微笑む。');
+  await say(B_('デレ'),'……約束だからね。');
+  await say('','ジルは うなずいた。');
+  await sleep(3000);
+  await fadeTo(1,2000);
+  await narrate(['その日の夜――','バニカの 意識が 失われた。'],2800);
+  stopMusic();await sleep(1200);
+  await p3Ch6();
+}
+
+/* ======== 第六章 白銀の災厄 ======== */
+const INFECTED_SPOTS=[[9,12],[22,12],[11,20],[20,6],[24,20],[7,9]];
+const RESIDENT_SPOTS=[[3,12,'子ども','child'],[27,12,'老婆','oldwoman'],[16,19,'町の 女','woman'],[10,5,'商人','merchant'],[24,7,'町の 男','man']];
+PAL.infected=Object.assign({},PAL.man,{S:'#b4a8c8',C:'#5a4a6a',T:'#3a2e4a',K:'#3a2e4a',H:'#4a3a5a',h:'#2a2038'});
+async function p3Ch6(){
+  setStep(77);S.leader=null;S.hideParty=1;banicaLeave();
+  await narrate(['夜明け前――','王都に 警鐘が 鳴り響く。'],2200);
+  F.time='dusk';loadMap('ntown',5,7,'down');P3.left=RESIDENT_SPOTS.length;
+  const list=[{id:'qC',spr:'celes',x:15,y:9,dir:'down'},{id:'qSol',spr:'guard',x:6,y:8,dir:'left'}];
+  RESIDENT_SPOTS.forEach(([x,y,nm,spr],i)=>list.push({id:'qR'+i,spr,x,y,dir:'down',talk:async n=>p3Evac(n,nm)}));
+  INFECTED_SPOTS.forEach(([x,y],i)=>list.push({id:'qI'+i,spr:'infected',x,y,dir:'down',chase:1,speed:.62,wt:1+i*.3,onCatch:n=>p3Grabbed(n)}));
+  npcSet(list);updateHUD();
+  await fadeTo(0,800);F.shake=.5;sfx('boom');
+  await say('ノルヴェルト兵','勇者殿！ 末期の 感染者たちが、一斉に 街へ！ 東門が 突破されました！');
+  await say(J_('戦闘'),'何が 起きている！？');
+  await say('ノルヴェルト兵','分かりません！ ただ……集団を 率いている 者が……');
+  await say(J_('戦闘'),'……誰だ？');
+  await say('ノルヴェルト兵','赤い 髪の 魔法使いです！');
+  await say(J_('驚き'),'……バニカ？');
+  await say(C_('真剣'),'ジルさん！ 感染者たちは 操られています！ 攻撃しないでください！');
+  await say(J_('戦闘'),'分かってる！');
+  await say(C_('真剣'),'私は 防御魔法で 広場を 守ります！ 逃げ遅れた 人たちを お願いします！');
+  await tutorial('王都防衛','逃げ遅れた 住民（5人）に 話しかけて 避難させよう。<br>紫の 感染者に つかまると ダメージを 受けて 押し戻される。<br>感染者は 操られているだけ――<span class="k">戦ってはいけない</span>。<br>全員 避難させたら 広場へ！');
+  npcDel('qSol');saveGame();
+}
+async function p3Evac(n,nm){
+  await say(nm,['た、助けて……！','あ、あの人たち、目が おかしいの……！','腰が 抜けて……','荷物が……いや、命が 先だな……！','うちの 家族は 先に 逃げたんだ……！'][RESIDENT_SPOTS.findIndex(r=>r[2]===nm)]||'助けて……！');
+  await say(J_('戦闘'),'城の 方へ 逃げろ！ 早く！');
+  sfx('ok');npcDel(n.id);P3.left=Math.max(0,(P3.left??1)-1);updateHUD();
+  if(P3.left===0){await say(C_('真剣'),'（ジルさん！ 皆さん 避難できました！ 広場へ！）');}
+}
+async function p3Grabbed(n){
+  F.moving=false;sfx('hurt');F.shake=.35;
+  const d=Math.max(8,Math.round(P.mhp*.08));P.hp=Math.max(1,P.hp-d);updateHUD();
+  n.x=n.hx;n.y=n.hy;n.moving=false;n.wt=1.6;
+  await say('',`感染者に つかまれた！ ジルは 振りほどいた。（HP-${d}）`);
+}
+async function p3Plaza(){
+  F.moving=false;F.npcs=F.npcs.filter(n=>!String(n.id).startsWith('qI'));
+  npcSet([{id:'qQB',spr:'banica',x:15,y:9,dir:'down'},{id:'qC',spr:'celes',x:13,y:13,dir:'up'}]);
+  F.px=15;F.py=12;F.dir='up';await sleep(300);
+  await say('','広場には、杖を 持った バニカが 立っていた。');
+  await say(J_('驚き'),'……バニカ！');
+  await say('','返事は ない。');
+  await say(J_('戦闘'),'俺だ！ ジルだ！');
+  await say('','バニカは 無言で 杖を 構える。');
+  sfx('fire');F.shake=.6;await flash(500,'#ff7a2a');
+  await say('','炎が 広場を 覆う。');
+  await say(J_('驚き'),'……嘘だろ。');
+  saveGame();
+  const r=await doBattle({enemies:['qbanica'],bg:'snow',noEscape:true,solo:'jil',queen:1,title:'女王感染者 バニカ',music:'banica'});
+  if(r.result!=='queen'){await gameOver();return}
+  await p3CelesChoice();
+}
+/* ---- 女王感染者バニカ戦 ---- */
+Object.assign(EDEF,{
+  qbanica:{name:'バニカ',hp:9000,atk:86,def:30,exp:0,gold:0,r:.5,speed:3.6,start:7,keep:5.5,wind:.55,act:.35,rec:.6,kind:'boss',reach:3,lunge:13,cd:[.5,1.1],barH:2.9,
+    subsNear:['burst','swing','fan'],subsFar:['bolt','rain','fan','bolt','rain'],subNames:{burst:'フレイムバースト',rain:'紅蓮の雨',fan:'炎の扇'},rainName:'紅蓮の雨',rainCol:'#ff5a1a',boltCol:'#ff7a2a',boltSpd:14,capMul:1},
+  infected:{name:'感染者',hp:999,atk:60,def:20,exp:0,gold:0,r:.45,speed:2.6,start:2.4,wind:.6,act:.25,rec:.7,kind:'swing',reach:1.6,cd:[1,2],immortal:1,barH:2.4},
+});
+const QRES=[[-5.5,-1],[5.5,-1],[0,5.8]];
+function queenInit(b){const q=b.q={phase:1,atk:0,calls:0,miss:0,lastMiss:-9,safe:100,volley:0,vt:2,res:[],talking:false,prev:'idle'};
+  for(const[x,z]of QRES){const m=makeHumanoid({skin:'#f0c090',hair:'#5a3a1e',tunic:'#8a7a5a',pants:'#5a4a3a',boots:'#3a2a1a',sleeve:'#8a7a5a',glove:'#f0c090',belt:'#3a2a1a'});m.root.position.set(x,0,z);m.root.visible=false;b.sc.add(m.root);q.res.push(m)}}
+async function queenTalk(lines){const b=BS;const q=b.q;q.talking=true;b.paused=true;for(const[n,t]of lines)await say(n,t);b.paused=false;q.talking=false}
+function queenTick(b,dt){
+  const q=b.q;if(!q){queenInit(b);return}if(q.talking||b.ended)return;const e=b.enemies.find(x=>x.type==='qbanica');if(!e)return;
+  if(e.state!==q.prev){if(e.state==='windup')q.atk++;q.prev=e.state}
+  if(q.phase===1){
+    if(q.calls===0&&q.atk>=4){q.calls=1;queenTalk([[J_('戦闘'),'バニカ！ 俺だ！ ジルだ！'],['','……返事は ない。']])}
+    else if(q.calls===1&&q.atk>=8){q.calls=2;queenTalk([[J_('戦闘'),'目を 覚ませ！ バニカ！！'],['','何度 呼びかけても、返事は ない。'],[C_('真剣'),'ジルさん！ 炎が 住民の 方へ……！ 私の 防御魔法では 届きません！']]).then(()=>{q.phase=2;q.vt=1.5;for(const m of q.res)m.root.visible=true;banner('炎から 住民を 守れ！（炎の 輪の 中に 立つ）',2200)})}
+    return}
+  if(q.phase===2){
+    e.atkCd=Math.max(e.atkCd,1);if(e.state==='windup'||e.state==='active'){e.state='recover';e.st=0;hideTele(e);if(e.rain)clearRain(e)}
+    q.vt-=dt;
+    if(q.vt<=0&&q.volley<7){q.volley++;q.vt=3.4;const n=q.volley>=4?2:1;const idx=[0,1,2].sort(()=>Math.random()-.5).slice(0,n);
+      e.face=angTo(e.pos,b.pl.pos);sfx('fire');banner('バニカの 炎が 住民を 狙っている！',900);
+      for(const i of idx){const r=q.res[i];const pos=r.root.position.clone();
+        const ring=new THREE.Mesh(new THREE.RingGeometry(1.25,1.55,28),new THREE.MeshBasicMaterial({color:'#ff6a1a',transparent:true,opacity:.9,side:THREE.DoubleSide}));ring.rotation.x=-Math.PI/2;ring.position.copy(pos).setY(.05);
+        const disc=new THREE.Mesh(new THREE.CircleGeometry(1.5,28),new THREE.MeshBasicMaterial({color:'#ff3a0a',transparent:true,opacity:.18,side:THREE.DoubleSide}));disc.rotation.x=-Math.PI/2;disc.position.copy(pos).setY(.04);
+        addFx(ring,1.9,(f,p)=>{ring.scale.setScalar(1.15-.15*p);ring.material.opacity=.5+.5*Math.sin(p*20)});addFx(disc,1.9,(f,p)=>{disc.material.opacity=.15+.35*p});
+        setTimeout(()=>{if(BS!==b||b.ended)return;const d=Math.hypot(b.pl.pos.x-pos.x,b.pl.pos.z-pos.z);burst(pos,'#ff7a2a',26,6);ringFx(pos,'#ff5a1a',2.4,.4);sfx('boom');
+          if(d<1.7){const dmg=Math.max(1,Math.round(calcEnemyDmg(e)*(b.pl.guarding?.25:.8)));takeDamage(dmg);afterPlayerDamage();popup(pos,'住民を 守った！','g')}
+          else{q.safe-=20;popup(pos,'住民が 炎に……！','r');banner('住民の 安全 '+Math.max(0,q.safe)+'%',1000);if(q.safe<=0&&!b.ended){b.ended=true;banner('住民を 守れなかった……',2000);loseSeq()}}},1900)}}
+    if(q.volley>=7&&q.vt<=0){q.phase=3;for(const m of q.res)m.root.visible=false;
+      queenTalk([[C_('真剣'),'皆さんは 避難できました……！ ジルさん！'],[J_('戦闘'),'……傷つけずに、止める！'],['','操られた 感染者たちが、ジルの 行く手を 阻む！']]).then(()=>{
+        for(let i=0;i<3;i++)addEnemy('infected',i,3);banner('感染者は 攻撃すると 怯む（倒れない）',2000)})}
+    return}
+}
+/* バニカへの 攻撃：第一・第二段階は 当たらない。最後の 1 は 削れない */
+function queenDamage(e,kind){const b=BS,q=b.q;if(!q||e.type!=='qbanica')return false;
+  if(q.phase<3){if(b.t-(q.lastNo||-9)>.7){q.lastNo=b.t;popup(e.pos,'……攻撃できない','g')}return true}
+  return false}
+function queenFloor(e,dmg){const b=BS,q=b.q;if(!q||e.type!=='qbanica')return dmg;
+  if(e.hp>1&&e.hp-dmg<1)return e.hp-1;
+  if(e.hp<=1){
+    if(b.t-q.lastMiss>2.2){q.lastMiss=b.t;q.miss++;popup(e.pos,'MISS','g');
+      if(q.miss<3){queenTalk([['','ジルは 最後の 一撃を 振り下ろせない……']]).then(()=>{e.hp=e.mhp;ringFx(e.pos,'#ff6a2a',3,.5);burst(e.pos,'#ff9a4a',30,6);sfx('heal');banner('バニカは 不思議な 力で 全回復した！',1800)})}
+      else{q.talking=true;b.ended=true;(async()=>{banner('ファイアーボム！',1600);sfx('fire');await sleep(700);
+        for(let i=0;i<4;i++){burst(b.pl.pos,'#ff7a2a',40,9);ringFx(b.pl.pos,'#ff3a0a',4+i,.5);sfx('boom');await sleep(160)}
+        await flash(900,'#ffd0a0');P.hp=Math.max(1,Math.round(P.hp*.2));b.pl.state='down';b.pl.st=0;await sleep(1400);await endBattle('queen')})()}}
+    else popup(e.pos,'MISS','g');
+    return 0}
+  return dmg}
+async function p3CelesChoice(){
+  F.time='dusk';F.npcs=F.npcs.filter(n=>!String(n.id).startsWith('qR'));
+  npcSet([{id:'qQB',spr:'banica',x:15,y:9,dir:'down'},{id:'qC',spr:'celes',x:15,y:13,dir:'up'}]);F.px=15;F.py=12;F.dir='up';P.hp=Math.max(P.hp,1);updateHUD();
+  await sleep(300);F.shake=.6;sfx('fire');
+  await say('','バニカが 強大な 炎魔法を 放とうとしている。');
+  await say(J_('戦闘'),'バニカ！！');
+  await say(J_('戦闘'),'頼む……目を 覚ましてくれ……！');
+  await say('','返事は ない。');
+  await say(J_('驚き'),'俺だよ……分かるだろ……？');
+  await say('','セレスが ジルの 後ろに 立つ。');
+  await say(C_(),'……ジルさん。');
+  await say(J_(),'……待ってくれ。');
+  await say(C_(),'……');
+  await say(J_(),'まだ、方法が あるはずだ。');
+  await say(C_(),'……');
+  await say(J_(),'セレスなら、治せるだろ……？');
+  await say('','セレスは 何も 答えない。');
+  await say(J_(),'……なあ。');
+  await say(C_('困り'),'……ごめんなさい。');
+  F.dir='down';await sleep(300);
+  await say('','ジルが 振り返る。');
+  await say(J_('驚き'),'……何を 言ってる？');
+  await say('','セレスは ジルの 勇者の剣を 手に取る。');
+  await say(J_('驚き'),'……セレス？');
+  await say(C_('真剣'),'……私が、終わらせます。');
+  await say(J_('驚き'),'……やめろ。');
+  await say(C_(),'……');
+  await say(J_('戦闘'),'やめろ！！');
+  const c=F.npcs.find(n=>n.id==='qC');if(c){c.x=c.hx=14;c.y=c.hy=10;c.dir='right'}
+  await say('','セレスは バニカへ 向かう。\nジルが 追いかけようとするが、感染者たちに 行く手を 阻まれる。');
+  stopMusic();
+  await whiteOut(1800);await sleep(3200);
+  /* 静かに 倒れている */
+  F.npcs=F.npcs.filter(n=>n.id!=='qQB'&&n.id!=='qC');
+  npcSet([{id:'qD',spr:'banica',x:15,y:10,dir:'down',lying:1,noblood:1,still:1},{id:'qC',spr:'celes',x:19,y:12,dir:'left'}]);F.px=15;F.py=12;F.dir='up';
+  await whiteIn(2200);
+  await say('','バニカは 静かに 倒れていた。\n同時に、操られていた 感染者たちの 動きが 止まった。');
+  await p3Confession();
+}
+async function p3Confession(){
+  await sleep(400);
+  await say(J_('驚き'),'……バニカ？');
+  await say('','返事は ない。');
+  await say(J_(),'……おい。');
+  await say('','ジルは 彼女の 手を 取る。');
+  AU.cur=null;playMusic('banica');
+  await sleep(1500);
+  await say(J_(),'……俺は……');
+  await say(J_(),'あのとき、君が 言おうとしてたこと……');
+  await say(J_(),'……本当は、分かってたんだ……');
+  await say('','ジルは バニカの 顔を 見る。');
+  await say(J_(),'……俺も、君のことが 好きだよ。');
+  await say('','返事は ない。');
+  await say(J_(),'……だから……目を 開けてよ……');
+  await say(J_(),'お願いだからさ……');
+  await say(J_(),'……本当は、魔王を 倒してから 伝えようって 思ってたんだ……');
+  await say(J_(),'……だからさ……な？');
+  await say(J_(),'……目、開けろよ……');
+  await sleep(3500);
+  await say(J_(),'……今度、教えてくれるんだろ……？');
+  await say(J_(),'……バニカ……');
+  /* カメラは ゆっくりと 二人から 離れていく */
+  $('#hud').hidden=true;await fadeTo(.55,4000);await sleep(1500);
+  await fadeTo(1,5000);
+  await waitSongEnd('banica');
+  stopMusic();
+  setStep(78);S.flags.banicaGone=1;saveGame();
+  await p3Ch7();
+}
+
+/* ======== 第七章 セレスの罪 ======== */
+async function p3Ch7(){
+  await sleep(1500);
+  await narrate(['数日前――'],2200);
+  S.leader='celes';S.hideParty=1;F.time='night';loadMap('ntown',5,18,'up');npcSet([]);updateHUD();
+  await fadeTo(0,1000);
+  await say('','王立図書館。\nセレスは 古い 文献を 読み続けていた。');
+  await say('','ノルヴェト症候群について 調べた 記録が、机いっぱいに 積まれている。\nどの本にも、回復魔法や 解呪魔法で 治療できたという 記録は ない。');
+  await say('','そして、セレスは 一冊の 古文献を 開く。');
+  await showBook('ノルヴェト症候群について',[
+    'ノルヴェト症候群は、ノルヴェルトの大地に踏み入った者が感染し得る、呪いの一種である。',
+    '現在、治療法は存在しない。',
+    '解呪魔法によっても、症状を根本から取り除くことはできない。',
+    '私は、女王感染者が死ぬことによってのみ、この風土病がなくなると考察する。',
+    '女王感染者は、この世に二人として存在しないと私は考察する。',
+    'この考察が正しければ、ノルヴェトマウンテンの頂上にいるとされる雪女こそ、女王感染者に違いない。',
+    'また、末期に至った感染者は意識を失い、周囲の人間を見境なく襲うことがある。女王感染者は、これらの感染者を従わせる力を持つと考えられる。']);
+  await say('','セレスは 最後の 一文を 何度も 読み返す。');
+  await say(C_('真剣'),'……女王感染者……');
+  await say('','彼女は ネメティスの 最後の 言葉を 思い出す。');
+  await say(N_('憎悪'),'私の 力を……どうにかしてでも……残さないと……！');
+  await say('','ネメティスは 倒された。\nしかし、疫病は 終息していない。\nそして、バニカは ネメティスから 直接 呪いを 受けた。');
+  await say(C_('困り'),'……まさか……');
+  await say('','セレスは 他の 文献を 調べる。\nしかし、どれだけ 探しても、解呪に 成功した 記録は 見つからない。');
+  await say(C_('困り'),'……お願い……');
+  await say(C_('困り'),'……何か、あるはずです……');
+  await say('','夜が 明ける。\nそれでも セレスは 本を 閉じない。');
+  await fadeTo(1,1400);
+  /* 二人だけの会話（続き） */
+  loadMap('nroom',3,2,'left');S.leader='celes';F.px=3;F.py=2;F.dir='left';npcSet([{id:'qB',spr:'banica',x:2,y:1,dir:'down',lying:1,noblood:1,still:1}]);F.time='day';
+  await sleep(600);await fadeTo(0,1200);
+  await say(B_(),'……ねえ、セレス。');
+  await say(C_(),'……はい。');
+  await say(B_(),'私、もう 治らないんでしょ？');
+  await say(C_('困り'),'……まだ、すべて 分かったわけでは ありません。');
+  await say(B_(),'……そっか。');
+  await say('','セレスは うつむく。');
+  await say(B_(),'……私、何の 病気なの？');
+  await say(C_(),'……ノルヴェト症候群です。');
+  await say(B_(),'……あの、街で 流行ってる？');
+  await say(C_(),'……はい。');
+  await say(B_(),'……私も、みんなと 同じなんだ。');
+  await say('','セレスは 古文献の 内容を 説明する。\nネメティスが 女王感染者だった 可能性。\nそのネメティスが 消滅したにも かかわらず、疫病が 続いていること。\nそして、バニカが 女王感染者に なっている 可能性。');
+  await say('','バニカは 黙って 話を 聞いていた。');
+  await say(B_(),'……じゃあ、私が いるから……？');
+  await say(C_('真剣'),'……まだ、確定したわけでは ありません。');
+  await say(B_(),'……でも、そうかもしれないんでしょ？');
+  await say(C_('困り'),'……はい。');
+  await sleep(2500);
+  await say(B_(),'……怖いな。');
+  await say(C_(),'……バニカ。');
+  await say(B_(),'まだ ジルと 行きたい 場所、いっぱい あるのに。');
+  await say(B_(),'……海にも 行きたいし、魔法の 研究も したいし……');
+  await say('','バニカは 少し 笑う。');
+  await say(B_('デレ'),'……あいつに、まだ 言えてないことも あるの。');
+  await say('','セレスは 何も 言えない。');
+  await say(B_(),'……でもね、セレス。');
+  await say(B_(),'私が 女王感染者で……みんなを 苦しめてるんだと したら……');
+  await say(B_(),'……それは、もっと 嫌なの。');
+  await say(C_(),'……');
+  await say(B_(),'もし 私が、みんなを 傷つけるように なったら……');
+  await say('','バニカは セレスを 見つめる。');
+  await say(B_(),'……あなたが、私を 殺して。');
+  await say(C_('困り'),'……そんなこと、できません。');
+  await say(B_(),'お願い。');
+  await say(C_('困り'),'……どうして、私なんですか……？');
+  await say(B_(),'……ジルには、きっと できないから。');
+  await say('','バニカは 窓の 外を 見る。');
+  await say(B_(),'あいつ、優しいから。');
+  await say(B_(),'きっと、最後まで 助けようと してくれる。');
+  await say(C_('困り'),'……私だって、助けたいです……！');
+  await say(B_(),'……知ってる。');
+  await say(B_(),'だから、あなたに お願いしてるの。');
+  await say('','セレスは 涙を こらえる。');
+  await say(B_(),'……ねえ、セレス。');
+  await say(C_(),'……はい。');
+  await say(B_('デレ'),'私、ジルのこと……本当に 好きなの。');
+  await say(C_(),'……知っています。');
+  await say(B_('驚き'),'……やっぱり、バレてた！？');
+  await say('','セレスは 小さく うなずく。\nバニカは 恥ずかしそうに 笑う。');
+  await say(B_('デレ'),'……そっか。');
+  await say(B_(),'……でも、まだ 本人には 言ってないから。');
+  await say(C_(),'……はい。');
+  await say(B_('デレ'),'……内緒ね。');
+  await say('','セレスは バニカの 手を 握る。');
+  await say(C_('真剣'),'……約束は、できません。');
+  await say(B_(),'……セレス。');
+  await say(C_(),'……でも。');
+  await say(C_('困り'),'……もし、あなたが 誰かを 傷つけるように なったら……');
+  await say('','セレスは 言葉を 詰まらせる。');
+  await say(C_('真剣'),'……私が、必ず 止めます。');
+  await say('','バニカは 微笑む。');
+  await say(B_('デレ'),'……ありがとう。');
+  await fadeTo(1,2000);await sleep(1200);
+  /* 現在――雪の墓標 */
+  await narrate(['現在――'],2000);
+  S.leader=null;S.hideParty=1;setStep(79);
+  loadMap('ngrave',7,5,'up');npcSet([]);F.time='day';updateHUD();
+  await fadeTo(0,1400);
+  await say('','王都の 外れ。\n雪の 降る 墓地に、バニカの 墓が ある。');
+  await say('','ジルは 墓の 前に 立っている。');
+  await sleep(1500);
+  npcSet([{id:'qC',spr:'celes',x:7,y:9,dir:'up'}]);await sleep(700);
+  {const c=F.npcs.find(n=>n.id==='qC');for(const y of[8,7,6]){c.ty=y;c.tx=7;c.moving=true;c.mt=0;await sleep(450)}}
+  await say(C_(),'……ジルさん。');
+  await say('','ジルは 振り返らない。');
+  await say(C_('困り'),'……バニカは……');
+  await say(J_(),'……言わなくて いい。');
+  await say(C_(),'……');
+  await say(J_(),'……今は、何も 聞きたくない。');
+  await say('','セレスは 立ち止まる。');
+  await say(C_('困り'),'……ごめんなさい。');
+  await say('','ジルは 何も 答えない。');
+  await say('','セレスは 墓に 花を 供え、静かに 立ち去った。');
+  {const c=F.npcs.find(n=>n.id==='qC');c.dir='down';for(const y of[7,8,9]){c.ty=y;c.tx=7;c.moving=true;c.mt=0;await sleep(450)}}
+  npcDel('qC');await sleep(2500);
+  setStep(80);saveGame();
+  await say('','（墓地を 出よう）');
+}
+
+/* ================= 第三部 ドット絵ムービー（女王感染者バニカの登場・セレスの決断） ================= */
+P3.fx=[];
+function p3FxDraw(g,cx,cy){if(!P3.fx.length)return;const now=performance.now();
+  for(let i=P3.fx.length-1;i>=0;i--){const f=P3.fx[i];const p=f.dur?(now-f.t0)/f.dur:0;if(f.dur&&p>=1){P3.fx.splice(i,1);continue}try{f.draw(g,cx,cy,Math.max(0,p),now)}catch(e){P3.fx.splice(i,1)}}}
+function fxAdd(draw,dur=0,id=null){const f={draw,dur,t0:performance.now(),id};P3.fx.push(f);return f}
+function fxDel(id){P3.fx=P3.fx.filter(f=>f.id!==id)}
+function fxClear(){P3.fx.length=0}
+const waitUntil=fn=>new Promise(r=>{const iv=setInterval(()=>{if(fn()){clearInterval(iv);r()}},25)});
+const npcById=id=>F.npcs.find(n=>n.id===id);
+function entPx(who){if(who==='jil')return[(F.moving?lerp(F.px,F.tx,F.mt):F.px)*TS+8,(F.moving?lerp(F.py,F.ty,F.mt):F.py)*TS+8];
+  const n=npcById(who);if(!n)return[0,0];return[(n.moving?lerp(n.x,n.tx,n.mt):n.x)*TS+8,(n.moving?lerp(n.y,n.ty,n.mt):n.y)*TS+8]}
+const dirTo=(x0,y0,x1,y1)=>x1>x0?'right':x1<x0?'left':y1>y0?'down':'up';
+async function npcWalk(id,path,spd=2.5,dirEnd=null){const n=npcById(id);if(!n)return;n.walkSpd=spd;
+  for(const[x,y]of path){n.dir=dirTo(n.x,n.y,x,y);n.tx=x;n.ty=y;n.mt=0;n.moving=true;await waitUntil(()=>!n.moving)}
+  n.walkSpd=0;n.hx=n.x;n.hy=n.y;if(dirEnd)n.dir=dirEnd}
+async function jilWalk(path,keepDir=null){const prev=P3.cut;P3.cut=true;
+  for(const[x,y]of path){F.dir=keepDir||dirTo(F.px,F.py,x,y);F.tx=x;F.ty=y;F.mt=0;F.moving=true;await waitUntil(()=>!F.moving)}
+  P3.cut=prev}
+{const base=p3OnStep;p3OnStep=function(m,x,y){if(P3.cut)return true;return base(m,x,y)}}
+/* 炎の粒 */
+function flame(g,x,y,h,t){const f=Math.sin(t/70+x*3.1)*.5+.5;g.fillStyle='#ff5a14';g.fillRect(x-1,y-h,3,h);g.fillStyle='#ffb43a';g.fillRect(x,y-h*.75-f,1,h*.6);g.fillStyle='#fff0a0';g.fillRect(x,y-2,1,1)}
+function glowOrb(g,x,y,r,c1,c2){const gr=g.createRadialGradient(x,y,0,x,y,r);gr.addColorStop(0,'#fff8e0');gr.addColorStop(.35,c1);gr.addColorStop(1,c2);g.fillStyle=gr;g.beginPath();g.arc(x,y,r,0,Math.PI*2);g.fill()}
+/* 杖を 掲げた バニカ */
+function fxStaff(id,orbFn){return fxAdd((g,cx,cy,p,now)=>{const[x,y]=entPx(id);const X=Math.round(x-cx),Y=Math.round(y-cy)-2;
+  const r=orbFn?orbFn(now):3+Math.sin(now/120);
+  g.globalCompositeOperation='lighter';glowOrb(g,X+5,Y-16,r*1.3,'rgba(160,60,255,.28)','rgba(160,60,255,0)');g.globalCompositeOperation='source-over';
+  g.fillStyle='#6a3e1e';g.fillRect(X+4,Y-14,2,14);g.fillStyle='#3a2210';g.fillRect(X+5,Y-14,1,14);
+  g.globalCompositeOperation='lighter';glowOrb(g,X+5,Y-16,r,'rgba(255,120,40,.95)','rgba(255,60,10,0)');g.globalCompositeOperation='source-over';
+  g.fillStyle='#ffd040';g.fillRect(X+4,Y-17,3,3)},0,'staff')}
+/* 足元から 広がる 炎の輪 */
+function fxFireRings(id){const[x0,y0]=entPx(id);
+  for(let k=0;k<3;k++)setTimeout(()=>fxAdd((g,cx,cy,p,now)=>{const R=10+p*96,X=x0-cx,Y=y0-cy;g.globalAlpha=1-p*.7;
+    g.strokeStyle='#ff6a1a';g.lineWidth=3;g.beginPath();g.ellipse(X,Y+4,R,R*.62,0,0,Math.PI*2);g.stroke();
+    g.strokeStyle='#ffd060';g.lineWidth=1;g.beginPath();g.ellipse(X,Y+4,R-2,(R-2)*.62,0,0,Math.PI*2);g.stroke();
+    for(let i=0;i<18;i++){const a=i/18*Math.PI*2+k;flame(g,Math.round(X+Math.cos(a)*R),Math.round(Y+4+Math.sin(a)*R*.62),4+((i*7+k)%4),now)}
+    g.globalAlpha=1},1500),k*380)}
+/* 広場に 残る 炎 */
+function fxPlazaFlames(id,cnt=26){const[x0,y0]=entPx(id);const pts=[];for(let i=0;i<cnt;i++){const a=Math.random()*Math.PI*2,r=26+Math.random()*80;pts.push([x0+Math.cos(a)*r,y0+4+Math.sin(a)*r*.62,3+Math.random()*4])}
+  return fxAdd((g,cx,cy,p,now)=>{g.globalAlpha=.9;for(const[x,y,h]of pts)flame(g,Math.round(x-cx),Math.round(y-cy),h+Math.sin(now/90+x)*1.5,now);g.globalAlpha=1},0,'flames')}
+/* 勇者の剣（ジル→セレス） */
+const SW={who:'jil',mode:'hip',from:null,t0:0};
+function drawSword(g,X,Y,mode,now){
+  if(mode==='hip'){g.fillStyle='#c8d0e0';g.fillRect(X+11,Y+7,1,7);g.fillStyle='#e3b33a';g.fillRect(X+10,Y+7,3,1);return}
+  if(mode==='hold'){g.fillStyle='#e8eef8';for(let i=0;i<9;i++)g.fillRect(X+8+i,Y+9-i,1,1);g.fillStyle='#ffffff';for(let i=0;i<8;i++)g.fillRect(X+9+i,Y+9-i,1,1);g.fillStyle='#e3b33a';g.fillRect(X+6,Y+9,4,2);return}
+  if(mode==='raise'){g.globalCompositeOperation='lighter';glowOrb(g,X+8,Y-12,9+Math.sin(now/80)*2,'rgba(200,230,255,.8)','rgba(160,200,255,0)');g.globalCompositeOperation='source-over';
+    g.fillStyle='#e8eef8';g.fillRect(X+7,Y-20,2,17);g.fillStyle='#ffffff';g.fillRect(X+7,Y-20,1,17);g.fillStyle='#e3b33a';g.fillRect(X+5,Y-3,6,2);g.fillStyle='#6a3e1e';g.fillRect(X+7,Y-1,2,3)}}
+function fxSword(){return fxAdd((g,cx,cy,p,now)=>{let[x,y]=entPx(SW.who);
+  if(SW.from){const q=Math.min(1,(now-SW.t0)/550);const[fx,fy]=entPx(SW.from);x=lerp(fx,x,q);y=lerp(fy,y,q)-Math.sin(q*Math.PI)*10;if(q>=1)SW.from=null;
+    g.globalCompositeOperation='lighter';glowOrb(g,x-cx,y-cy,6,'rgba(220,240,255,.9)','rgba(220,240,255,0)');g.globalCompositeOperation='source-over'}
+  drawSword(g,Math.round(x-8-cx),Math.round(y-8-cy)-2,SW.from?'hold':SW.mode,now)},0,'sword')}
+/* 光が 集まる */
+function fxGather(id,col='#e8f4ff'){return fxAdd((g,cx,cy,p,now)=>{const[x,y]=entPx(id);for(let i=0;i<14;i++){const a=i*2.4+now/400,r=34*(1-((now/900+i/14)%1));g.fillStyle=col;g.fillRect(Math.round(x-cx+Math.cos(a)*r),Math.round(y-cy-10+Math.sin(a)*r*.7),2,2)}},0,'gather')}
+/* 暗い 赤の 空気 */
+function fxRedAir(){return fxAdd((g,cx,cy,p,now)=>{g.fillStyle=`rgba(120,20,10,${.12+.05*Math.sin(now/300)})`;g.fillRect(0,0,g.canvas.width,g.canvas.height)},0,'redair')}
+
+/* ---- ムービー１：女王感染者バニカの登場 ---- */
+p3Plaza=async function(){
+  F.moving=false;P3.cut=true;F.npcs=F.npcs.filter(n=>!String(n.id).startsWith('qI'));
+  npcSet([{id:'qQB',spr:'banica',x:16,y:8,dir:'down'},{id:'qC',spr:'celes',x:13,y:13,dir:'up'},
+    {id:'qJ1',spr:'infected',x:14,y:8,dir:'down'},{id:'qJ2',spr:'infected',x:18,y:8,dir:'down'},{id:'qJ3',spr:'infected',x:15,y:7,dir:'down'},{id:'qJ4',spr:'infected',x:17,y:7,dir:'down'}]);
+  F.px=16;F.py=13;F.dir='up';P3.cut=false;await sleep(400);
+  await jilWalk([[16,12],[16,11]]);await sleep(300);
+  await say('','広場には、杖を 持った バニカが 立っていた。\n操られた 感染者たちが、彼女を 囲むように 立ち尽くしている。');
+  await say(J_('驚き'),'……バニカ！');
+  await say('','返事は ない。');
+  await jilWalk([[16,10]]);
+  await say(J_('戦闘'),'俺だ！ ジルだ！');
+  await sleep(600);
+  await say('','バニカは 無言で 杖を 構える。');
+  /* 杖を 掲げる */
+  const orb={t0:performance.now()};fxStaff('qQB',now=>Math.min(9,3+(now-orb.t0)/220)+Math.sin(now/90));sfx('tele');
+  await sleep(1500);fxRedAir();
+  F.shake=.8;sfx('boom');await flash(220,'#ff8a3a');
+  fxFireRings('qQB');await sleep(500);sfx('fire');await sleep(450);sfx('boom');F.shake=.5;
+  await jilWalk([[16,11]],'up');
+  await sleep(900);fxPlazaFlames('qQB');await sleep(700);
+  await say('','炎が 広場を 覆う。');
+  await say(J_('驚き'),'……嘘だろ。');
+  fxDel('staff');
+  saveGame();
+  const r=await doBattle({enemies:['qbanica'],bg:'snow',noEscape:true,solo:'jil',queen:1,title:'女王感染者 バニカ',music:'banica'});
+  if(r.result!=='queen'){fxClear();await gameOver();return}
+  await p3CelesChoice();
+};
+/* ---- ムービー２：セレスの決断 ---- */
+p3CelesChoice=async function(){
+  F.time='dusk';F.npcs=F.npcs.filter(n=>!String(n.id).startsWith('qR'));fxClear();
+  npcSet([{id:'qQB',spr:'banica',x:16,y:8,dir:'down'},{id:'qC',spr:'celes',x:13,y:13,dir:'up'},
+    {id:'qJ1',spr:'infected',x:14,y:9,dir:'right'},{id:'qJ2',spr:'infected',x:18,y:9,dir:'left'},{id:'qJ3',spr:'infected',x:14,y:11,dir:'right'},{id:'qJ4',spr:'infected',x:18,y:11,dir:'left'}]);
+  F.px=16;F.py=11;F.dir='up';P.hp=Math.max(P.hp,1);updateHUD();
+  fxRedAir();fxPlazaFlames('qQB',18);
+  /* 強大な 炎魔法の 溜め */
+  const ch={t0:performance.now()};fxStaff('qQB',now=>Math.min(16,4+(now-ch.t0)/900)+Math.sin(now/70)*1.5);fxSword();SW.who='jil';SW.mode='hip';SW.from=null;
+  await sleep(500);F.shake=.6;sfx('fire');
+  await say('','バニカが 強大な 炎魔法を 放とうとしている。');
+  await say(J_('戦闘'),'バニカ！！');
+  await say(J_('戦闘'),'頼む……目を 覚ましてくれ……！');
+  await say('','返事は ない。');
+  await say(J_('驚き'),'俺だよ……分かるだろ……？');
+  /* セレスが 後ろに 立つ */
+  await npcWalk('qC',[[14,13],[15,13],[16,13],[16,12]],2.2,'up');
+  await say('','セレスが ジルの 後ろに 立つ。');
+  await say(C_(),'……ジルさん。');
+  await say(J_(),'……待ってくれ。');
+  await say(C_(),'……');
+  await say(J_(),'まだ、方法が あるはずだ。');
+  await say(C_(),'……');
+  await say(J_(),'セレスなら、治せるだろ……？');
+  await say('','セレスは 何も 答えない。');
+  await say(J_(),'……なあ。');
+  await say(C_('困り'),'……ごめんなさい。');
+  F.dir='down';await sleep(500);
+  await say('','ジルが 振り返る。');
+  await say(J_('驚き'),'……何を 言ってる？');
+  /* 剣を 奪う */
+  sfx('slash');SW.from='jil';SW.who='qC';SW.t0=performance.now();SW.mode='hold';F.shake=.25;
+  await sleep(650);sfx('parry');
+  await say('','セレスは ジルの 腰から、勇者の剣を 奪い取った。');
+  await say(J_('驚き'),'……セレス？');
+  await say(C_('真剣'),'……私が、終わらせます。');
+  await say(J_('驚き'),'……やめろ。');
+  await say(C_(),'……');
+  /* バニカへ 向かう */
+  const walk=npcWalk('qC',[[17,12],[17,11],[17,10],[17,9],[16,9]],1.5,'up');
+  await sleep(500);
+  await say(J_('戦闘'),'やめろ！！');
+  /* 感染者が 割り込む */
+  F.dir='up';
+  const blk=Promise.all([npcWalk('qJ3',[[15,11],[15,10],[16,10]],5,'down'),npcWalk('qJ1',[[15,9]],4,'down'),npcWalk('qJ4',[[17,11],[17,10]],4,'left')]);
+  await blk;
+  sfx('hurt');F.shake=.5;await flash(160,'#c040ff');
+  await jilWalk([[16,12]],'up');
+  await say('','ジルが 追いかけようとするが、感染者たちに 行く手を 阻まれる。');
+  await walk;
+  /* 剣を 振りかぶる */
+  SW.mode='raise';sfx('tele');fxGather('qC');
+  await sleep(1600);
+  F.shake=.3;await sleep(700);
+  sfx('crit');stopMusic();
+  await whiteOut(900);fxClear();await sleep(3600);
+  /* 静かに 倒れている */
+  F.npcs=F.npcs.filter(n=>!['qQB','qC','qJ1','qJ2','qJ3','qJ4'].includes(n.id));
+  npcSet([{id:'qD',spr:'banica',x:16,y:8,lying:1,noblood:1,still:1,dir:'down'},{id:'qC',spr:'celes',x:17,y:9,dir:'left'},
+    {id:'qJ1',spr:'infected',x:14,y:9,dir:'right'},{id:'qJ2',spr:'infected',x:18,y:9,dir:'left'},{id:'qJ3',spr:'infected',x:15,y:10,dir:'right'},{id:'qJ4',spr:'infected',x:17,y:10,dir:'left'}]);
+  SW.who='qC';SW.mode='hold';SW.from=null;fxSword();
+  F.px=16;F.py=12;F.dir='up';
+  await whiteIn(2400);
+  await say('','バニカは 静かに 倒れていた。');
+  for(const id of['qJ1','qJ2','qJ3','qJ4']){await sleep(420);const n=npcById(id);if(n){n.lying=1;n.noblood=1;n.still=1;sfx('hit')}}
+  await sleep(500);
+  await say('','同時に、操られていた 感染者たちの 動きが 止まった。');
+  fxDel('sword');await sleep(200);
+  await jilWalk([[16,11],[16,10],[16,9]],'up');
+  await p3Confession();
+};
+
+/* ================= 第三部 第八章 父の遺言・第九章 霧の島・終章 勇者の終わり ================= */
+const P3MAPS3={"ncave": ["岩岩岩岩岩岩岩岩岩岩岩岩岩岩岩", "岩雪雪雪雪雪雪雪雪雪雪雪雪雪岩", "岩雪雪雪雪雪雪祭雪雪雪雪雪雪岩", "岩雪雪雪雪雪雪雪雪雪雪雪雪雪岩", "岩雪雪雪雪岩雪雪雪雪雪雪雪雪岩", "岩雪雪雪岩雪雪雪雪岩雪雪雪雪岩", "岩雪雪雪雪雪雪雪雪雪雪雪雪雪岩", "岩雪雪雪岩雪雪岩雪雪雪雪雪雪岩", "岩雪雪雪雪雪雪雪雪雪雪雪雪雪岩", "岩雪雪雪雪雪雪雪雪雪雪雪雪雪岩", "岩岩岩岩岩岩岩<岩岩岩岩岩岩岩"], "deck": ["~~~~~~~~~~~~~~~~", "~~~~CCCCCCCC~~~~", "~~~C________C~~~", "~~C____|_____C~~", "~~C__________C~~", "~~C___B__B___C~~", "~~C__________C~~", "~~~C________C~~~", "~~~~CCCCCCCC~~~~", "~~~~~~~~~~~~~~~~"], "fogisle": ["TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT", "TTT...T.TT.T...T............TT", "TT........T.......T....T..T.TT", "TT.T....T...........R.......TT", "TT.....T...............RR..TTT", "TT...T..T.................T.TT", "TTT...T..............TT.....TT", "TT.......R...............T..TT", "TTR....T.............T....R.TT", "TTT.....T..R............T..TTT", "TT...T....T.........T..T....TT", "TT.T..T.T..T.....R.TT.....R.TT", "TT.T..T..RT.....T..R........TT", "TT.................RRT......TT", "TT........TR.......T........TT", "TT....RT........TT.......T..TT", "TT...R.T..T..T..............TT", "TT...................T..T..TTT", "TT.....T.........T..T.R.....TT", "TT........T..T.......T....T.TT", "TT..T...T..TT...............TT", "TT.T......RRT........TTT....TT", "TT...Taaaaaaaa..aaaaaaaa.TT.TT", "~~~~~~aaaaaaaaaaaaaaaaaa~~~~~~", "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~", "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"]};
+const D_=(ex='通常')=>'デスヴァルド:'+ex;
+Object.assign(BASE,{ncave:P3MAPS3.ncave,deck:P3MAPS3.deck,fogisle:P3MAPS3.fogisle});
+Object.assign(MAPDEF,{
+  ncave:{name:'ノルヴェト山の 洞窟',fill:'岩',music:()=>null,tint:'cave'},
+  deck:{name:'船の 甲板',fill:'~',music:()=>null},
+  fogisle:{name:'霧の島',fill:'T',music:()=>null,tint:'fog'},
+});
+PAL.deathvald={H:'#d8d4e4',h:'#a8a4b8',S:'#ecd8cc',E:'#c01828',C:'#2a1620',T:'#1a0e14',Y:'#c9a33a',y:'#7a1020',K:'#3a1a24',G:'#1a0e14',P:'#2a1620',B:'#1a0e14',long:1};
+PAL.shade=Object.assign({},PAL.man,{H:'#2a1838',h:'#1a0e24',S:'#5a4a6a',E:'#ff3a6a',C:'#2a1838',T:'#1a0e24',Y:'#3a2a4a',y:'#1a0e24',K:'#1a0e24',G:'#3a2a4a',P:'#2a1838',B:'#1a0e24'});
+/* 霧（濃さは P3.fog で変えられる） */
+P3.fog=.55;
+{const base=tintNow;tintNow=function(){if(F.map&&F.map.id==='fogisle'&&P3.fogClear)return 'day';return base()}}
+function p3FogDraw(g,cx,cy){if(!F.map||F.map.id!=='fogisle'||P3.fogClear)return;const W=g.canvas.width,H=g.canvas.height,t=performance.now()/1000;
+  g.fillStyle=`rgba(226,230,236,${Math.min(.92,P3.fog*.8)})`;g.fillRect(0,0,W,H);
+  for(let i=0;i<9;i++){const x=((i*173+t*(6+i%3*3))%(W+160))-80,y=((i*97)%H)+Math.sin(t*.3+i)*12;const r=60+(i%4)*22;
+    const gr=g.createRadialGradient(x,y,0,x,y,r);gr.addColorStop(0,`rgba(240,242,246,${Math.min(.9,P3.fog*.7)})`);gr.addColorStop(1,'rgba(240,242,246,0)');g.fillStyle=gr;g.fillRect(x-r,y-r,r*2,r*2)}}
+{const base=p3FxDraw;p3FxDraw=function(g,cx,cy){base(g,cx,cy);p3FogDraw(g,cx,cy)}}
+/* 風と波の音（曲は 流さない） */
+const AMB={nodes:null};
+function ambStart(){try{audioInit();if(!AU.ctx||AMB.nodes)return;const c=AU.ctx;const len=c.sampleRate*4,buf=c.createBuffer(1,len,c.sampleRate),d=buf.getChannelData(0);let l=0;for(let i=0;i<len;i++){const w=Math.random()*2-1;l=(l+.02*w)/1.02;d[i]=l*3.5}
+  const mk=(f,q,type,vol,lfoF,lfoA)=>{const s=c.createBufferSource();s.buffer=buf;s.loop=true;const fl=c.createBiquadFilter();fl.type=type;fl.frequency.value=f;fl.Q.value=q;const gn=c.createGain();gn.gain.value=vol;
+    const lfo=c.createOscillator();lfo.frequency.value=lfoF;const la=c.createGain();la.gain.value=lfoA;lfo.connect(la);la.connect(gn.gain);s.connect(fl);fl.connect(gn);gn.connect(AU.master||c.destination);s.start();lfo.start();return[s,lfo]};
+  AMB.nodes=[...mk(420,.7,'lowpass',.55,.11,.4),...mk(900,1.4,'bandpass',.22,.07,.18)]}catch(e){}}
+function ambStop(){if(AMB.nodes){for(const n of AMB.nodes){try{n.stop()}catch(e){}}AMB.nodes=null}}
+/* 魔物干渉（第三部の さいごで 覚える） */
+SKILLS.kanshou={name:'魔物干渉',sp:30,pt:0,lv:99,t:'interfere',desc:'魔物の 魔力の 流れに 触れ、周りの 魔物の 動きを 止める（ボスは 少し 怯む）'};
+
+/* ---- 目的・移動 ---- */
+{const base=p3Objective;p3Objective=function(s){return({80:'（ノルヴェト山の 洞窟で 古い 記録が 見つかったらしい）',81:'ノルヴェト山の 洞窟へ（雪原の 北東）',82:'……',84:'霧の島を 進む',85:'霧の 奥へ',86:'……',87:'……',88:'（第三部 おわり ― 第四部へ つづく）'})[s]||base(s)}}
+{const base=p3OnStep;p3OnStep=function(m,x,y){if(P3.cut)return true;const t=tileAt(x,y);
+  if(m.id==='ngrave'&&y>=m.h-1&&st()===80){run(()=>p3AfterGrave());return true}
+  if(m.id==='nfield'&&t==='山'&&st()===81){run(()=>goMap('ncave',7,9,'up'));return true}
+  if(m.id==='ncave'&&t==='<'){run(()=>goMap('nfield',29,5,'down'));return true}
+  if(m.id==='fogisle'){
+    if(st()===84&&y<=15){run(()=>p3Separated());return true}
+    if(st()===85&&y<=10){run(()=>p3FakeBanica());return true}
+    if(y>=m.h-3&&st()>=84){run(()=>say('','霧の 立ちこめる 海だ。船は 沖で 待っている。'));return true}
+    return true}
+  return base(m,x,y)}}
+{const base=TILEACT['祭'];TILEACT['祭']=async(x,y,k)=>{if(F.map.id==='ncave'){await p3CaveRecord();return}return base(x,y,k)}}
+
+/* ======== 第八章 父の遺言 ======== */
+async function p3AfterGrave(){
+  await say('','墓地を 出ると、診療所の 医師が 待っていた。');
+  await say('医師','……勇者殿。こんな時に、申し訳ありません。');
+  await say('医師','ノルヴェト山の 中腹の 洞窟で、古い 記録が 見つかったのです。\nあなたの 剣と 同じ 紋章が 刻まれていたと……');
+  await say(J_(),'……剣と、同じ？');
+  await say('医師','はい。雪原の 北東、山の 入口から 行けます。');
+  setStep(81);banicaLeave();S.hideParty=0;F.trail=[];saveGame();
+  await goMap('nfield',18,10,'down');
+}
+async function p3CaveRecord(){
+  if(st()!==81){await say('','古い 台座だ。');return}
+  await say('','台座には、ジルの 剣と 同じ 紋章が 刻まれていた。');
+  await say('','そばには 古い 記録と、雪に 守られるように 置かれた 一通の 封筒。');
+  await say('','封筒には、見覚えのある 字で こう 書かれていた。\n「ジルへ」');
+  await say(J_('驚き'),'……父さんの、字だ。');
+  await say('','ジルは 封筒を 懐に しまった。\nまだ、開くことは できなかった。');
+  setStep(82);saveGame();
+  await fadeTo(1,1200);
+  await narrate(['数日後――','ジルたちは、ノルヴェルトを 離れた。'],2600);
+  await p3Deck();
+}
+async function p3Deck(){
+  S.hideParty=1;S.leader=null;loadMap('deck',8,6,'up');npcSet([{id:'dC',spr:'celes',x:12,y:5,dir:'left'},{id:'dS',spr:'man',x:4,y:6,dir:'right'}]);F.time='day';updateHUD();
+  ambStart();await fadeTo(0,1200);
+  await jilWalk([[8,5],[8,4],[8,3]],'up');await sleep(800);
+  await say('','ノルヴェルトを 離れる 船。\nジルは 一人、甲板で 海を 眺めている。');
+  await say('','セレスは 少し 離れた ところに いる。');
+  await say('','以前なら、バニカが 二人の 間に 割って入り、賑やかな 会話が 始まっていた。\nしかし、今は 誰も 話さない。');
+  await sleep(2000);
+  await say('','ジルは 腰に 差した 剣を 見つめる。\n父から 受け継いだ、剣。');
+  await say('','ジルは 懐から、洞窟で 見つけた 封筒を 取り出した。');
+  await showBook('父の手紙',[
+    '手紙には、父が かつて 謎の男と 交渉していたことが 記されていた。',
+    '男の 正体は、魔王デスヴァルドの 分身。',
+    '交渉の 条件は――魔力装置へ つながる 鍵となる 剣を 明け渡す 代わりに、アレスタ国王の 洗脳を 解くこと。',
+    'しかし、父は 最後まで 剣を 渡さなかった。']);
+  await showBook('父の手紙',[
+    '「あの男は、魔力装置を 破壊すれば、世界から 魔物が 消えると 言った。」',
+    '「確かに、魔物によって 苦しむ者は 多い。」',
+    '「だが、魔力装置が 失われたとき、世界が どう 変化するのか、誰にも 分からない。」',
+    '「その先に 待つものを 知らずに、すべてを 明け渡すことは できなかった。」',
+    '「ジル。もし お前が この手紙を 読んでいるなら、自分の目で 真実を 確かめてほしい。」']);
+  await say('','ジルは 手紙を 握りしめる。');
+  await say(J_('思案'),'……父さんは……知っていたのか。');
+  await say('','父の墓で 交わした 約束を 思い出す。\n「また 来るよ」');
+  await say('','その言葉が、今は 遠い昔の ことのように 感じられる。');
+  await sleep(1500);
+  /* 古代の記録 */
+  await npcWalk('dC',[[11,5],[10,4],[9,4],[9,3]],1.8,'left');F.dir='right';
+  await say(C_(),'……ジルさん。');
+  await say(C_('真剣'),'ノルヴェト症候群を 調べていたとき……魔力装置について 書かれた、古代の 記述を 見つけていました。');
+  await showBook('古代の記録',[
+    '魔力装置は、人間の 腐敗した 感情を 集め、魔物を 生み出している。',
+    '魔物の 大半は 自我を 持たず、野生動物のように 行動する。',
+    'そして 勇者の 末裔は、魔力装置に 干渉できる 素質を 持つ。']);
+  await say(J_('驚き'),'……魔物は、人間から 生まれていたのか……');
+  await say(C_(),'……その 記述が 正しければ。');
+  await say(J_(),'……じゃあ、人間が 争う 限り……');
+  await say(C_('困り'),'魔物は、また 生まれる……');
+  await say('','ジルは 黙り込んだ。');
+  await sleep(2500);
+  await say('','魔物を 倒すだけでは、何も 終わらない。\n――ジルは、それを 理解した。');
+  await fadeTo(1,1600);
+  await say('船乗り','……霧が 出てきやがった。この先は 霧の島だ。補給で 一度 寄るぞ。');
+  setStep(84);saveGame();
+  await p3FogLand();
+}
+
+/* ======== 第九章 霧の島 ======== */
+async function p3FogLand(){
+  P3.fog=.5;P3.fogClear=false;S.hideParty=0;S.leader=null;
+  loadMap('fogisle',14,22,'up');npcSet([]);F.trail=[];updateHUD();ambStart();
+  await fadeTo(0,1500);
+  await say('','霧の島。\n人が 心の 奥に 抱えている 記憶を 映し出す 魔物が いると いう。');
+  await say(C_('真剣'),'……霧が 濃いですね。離れないように しましょう。');
+  saveGame();
+}
+async function p3Separated(){
+  F.moving=false;P3.fog=.75;
+  await say('','霧が、いっそう 濃くなっていく。');
+  await sleep(600);
+  S.hideParty=1;F.trail=[];sfx('cancel');
+  await sleep(900);
+  F.dir='down';await sleep(500);
+  await say(J_(),'……セレス？');
+  await sleep(1200);
+  await say('','返事は ない。');
+  F.dir='up';setStep(85);saveGame();
+}
+/* ---- ムービー３：霧の中の バニカ ---- */
+async function p3FakeBanica(){
+  F.moving=false;P3.cut=true;
+  await sleep(800);
+  await say('？？？','……ジル。');
+  await say('','ジルは 立ち止まる。');
+  await say(J_(),'……？');
+  /* 霧の奥に 人影 */
+  const n={id:'fB',spr:'banica',x:14,y:4,dir:'down',alpha:0,still:1};npcSet([n]);
+  for(let a=0;a<=1;a+=.05){n.alpha=a*.55;await sleep(70)}
+  await sleep(700);P3.fog=.6;
+  for(let a=.55;a<=1;a+=.05){n.alpha=a;await sleep(60)}
+  await say('','霧の中に、赤い髪の 少女が 現れる。');
+  await say(J_('驚き'),'……バニカ……？');
+  await say('','彼女は いつものように 微笑んでいる。');
+  await say('偽バニカ','……ねえ、ジル。');
+  await say(J_(),'……');
+  await say('偽バニカ','約束、忘れてないよね？');
+  await say(J_(),'……');
+  await say('偽バニカ','また、一緒に 海に 行こうって……');
+  /* 近づくと、姿が 変わっていく */
+  await jilWalk([[14,9]],'up');await sleep(300);
+  let flick=true;const fl=setInterval(()=>{if(!flick)return;n.spr=Math.random()<.35?'shade':'banica';n.alpha=.55+Math.random()*.45},140);
+  await jilWalk([[14,8]],'up');
+  await say('','しかし、その姿が 少しずつ 変わっていく。');
+  await say('偽バニカ','……どうして？');
+  await say(J_(),'……？');
+  await say('偽バニカ','どうして、助けて くれなかったの？');
+  await say(J_('驚き'),'……違う。');
+  await say('偽バニカ','私、待ってたのに。');
+  await say(J_('戦闘'),'……やめろ。');
+  await say('偽バニカ','……ジル。');
+  await say('偽バニカ','私、まだ 待ってるよ。');
+  await sleep(800);
+  await say('','ジルは 目を 閉じる。');
+  await sleep(1200);
+  await say(J_(),'……お前は、バニカじゃない。');
+  flick=false;clearInterval(fl);n.spr='shade';
+  for(let a=1;a>=0;a-=.04){n.alpha=Math.max(0,a);n.y=4-(1-a)*.3;await sleep(70)}
+  npcDel('fB');
+  await say('','霧の 中の 少女は 消えた。\nその場に 残ったのは、ジル 一人。');
+  /* 剣を 地面に 置く */
+  SW.who='jil';SW.mode='ground';fxAdd((g,cx,cy)=>{const X=Math.round(14*TS-cx),Y=Math.round(7*TS-cy);g.fillStyle='#c8d0e0';g.fillRect(X+3,Y+9,10,1);g.fillStyle='#ffffff';g.fillRect(X+3,Y+8,9,1);g.fillStyle='#e3b33a';g.fillRect(X+12,Y+7,1,3);g.fillStyle='#6a3e1e';g.fillRect(X+13,Y+8,2,1)},0,'gsword');
+  sfx('hit');F.dir='down';
+  await say('','ジルは 剣を 地面に 置き、しばらく 動かない。');
+  await sleep(3000);
+  await say(J_(),'……なんで……');
+  await sleep(1500);
+  await say(J_(),'……なんで、こんなことに……');
+  await sleep(3500);
+  P3.cut=false;setStep(86);
+  await p3Deathvald();
+}
+/* ---- 魔王デスヴァルドとの邂逅 ---- */
+async function p3Deathvald(){
+  P3.cut=true;
+  await say('','霧の 奥から、足音が 響く。');
+  npcSet([{id:'dV',spr:'deathvald',x:14,y:1,dir:'down'}]);
+  await npcWalk('dV',[[14,2],[14,3],[14,4],[14,5]],1.2,'down');
+  await say(D_(),'……久しいな、勇者ジル。');
+  F.dir='up';await sleep(400);
+  await say('','ジルは 顔を 上げる。');
+  await say(J_(),'……誰だ。');
+  await say(D_(),'私は、魔王。デスヴァルドだ。');
+  await say(D_('思索'),'お前の 父親に よく 似ている。');
+  fxDel('gsword');sfx('slash');
+  await say(J_('戦闘'),'……父さんを 殺したのは、お前か。');
+  await say(D_(),'……そうだ。');
+  await say('','ジルは 剣を 握る。');
+  await say(J_('戦闘'),'……なぜだ。');
+  await say(D_(),'お前の 父親は、私の 計画を 阻止しようとした。');
+  await say(J_('戦闘'),'……だから、村を 襲ったのか。');
+  await say(D_(),'……ああ。');
+  await say('','ジルは 怒りを 抑えながら 問いかける。');
+  await say(J_(),'……お前は、何を しようと している。');
+  await say(D_('決意'),'……世界を 変える。');
+  await say('','デスヴァルドは 魔力装置の 真実を 語り始める。');
+  await say(D_(),'私は かつて、勇者だった。');
+  await say(J_('驚き'),'……何？');
+  await say(D_('思索'),'魔物を 倒し、人々を 救い、世界を 平和に しようとした。');
+  await say(D_('思索'),'だが、何度 魔物を 倒しても、世界から 魔物は 消えなかった。');
+  await say(D_(),'やがて 私は、魔力装置の 存在を 知った。');
+  await say('','ジルは 黙って 聞いている。');
+  await say(D_(),'人間の 憎悪、嫉妬、強欲……その 腐敗した 感情が、魔力装置を 通して 魔物と なる。');
+  await say(D_('決意'),'ならば、装置を 破壊すれば よい。');
+  await say(J_(),'……');
+  await say(D_('決意'),'魔物の いない 世界を 作る。それが、私の 答えだ。');
+  await say('','デスヴァルドは ジルを 見る。');
+  await say(D_(),'お前も 勇者の 血を 引く。私と 同じ 力を 持っている。');
+  /* 魔物が 現れる */
+  await say('','魔王が 手を 上げる。');
+  sfx('tele');
+  const m={id:'dM',spr:'shade',x:11,y:7,dir:'right',alpha:0};npcSet([npcById('dV'),m]);
+  for(let a=0;a<=1;a+=.08){m.alpha=a;await sleep(60)}
+  await say('','霧の 中から 魔物が 現れる。\nしかし、魔物は 襲いかからない。');
+  await say(D_(),'魔物には、魔力装置の 一部が 宿る。');
+  await say(D_(),'その つながりを 感じ取れば、干渉する ことが できる。');
+  await say('','ジルは 目を 閉じる。');
+  /* 干渉 */
+  fxAdd((g,cx,cy,p,now)=>{const[x,y]=entPx('jil');for(let k=0;k<3;k++){const r=((now/18+k*22)%66);g.strokeStyle=`rgba(190,120,255,${1-r/66})`;g.lineWidth=1;g.beginPath();g.ellipse(x-cx,y-cy+4,r,r*.62,0,0,Math.PI*2);g.stroke()}},0,'kansho');
+  await sleep(1600);
+  fxAdd((g,cx,cy,p,now)=>{const[x,y]=entPx('dM');g.strokeStyle='rgba(190,120,255,.9)';g.lineWidth=1;g.beginPath();g.moveTo(...entPx('jil').map((v,i)=>v-(i?cy:cx)));g.lineTo(x-cx,y-cy);g.stroke()},0,'kline');
+  await say('','魔物の 中に ある、魔力の 流れを 感じ取る。');
+  m.still=1;sfx('parry');await flash(300,'#c890ff');
+  await say('','魔物が、ジルの 前で 動きを 止める。');
+  await say(D_('微笑'),'……そうだ。');
+  await say(D_('微笑'),'お前にも、できる。');
+  await say('','ジルは 魔物を 見つめる。');
+  await say(J_('思案'),'……これが……');
+  await say(J_('思案'),'……勇者の 力……');
+  fxDel('kline');fxDel('kansho');
+  for(let a=1;a>=0;a-=.08){m.alpha=Math.max(0,a);await sleep(60)}npcDel('dM');
+  if(!P.skills.includes('kanshou'))P.skills.push('kanshou');
+  sfx('level');await say('','ジルは「魔物干渉」の 力に 目覚めた。\n（スキル「魔物干渉」を 覚えた　メニュー →キャラ →スキル）');
+  /* すれ違う 二人の 答え */
+  await say(D_(),'ジル。私と ともに 来い。');
+  await say(D_('決意'),'魔物の いない、新しい 世界を 作ろう。');
+  await say('','ジルは しばらく 黙っている。\nそして、問いかける。');
+  await say(J_(),'……魔物が いなくなったら、人間は 争わなくなるのか？');
+  await say(D_(),'……');
+  await say(J_(),'誰かを 憎むことも、傷つけることも なくなるのか？');
+  await say(D_('思索'),'……少なくとも、魔物による 悲劇は 終わる。');
+  await say(J_(),'……それだけ なんだな。');
+  await say(D_(),'……何？');
+  await say(J_(),'……魔物が いなくなっても、人間は 変わらない。');
+  await say(J_(),'誰かが 誰かを 傷つける。');
+  await say(J_(),'誰かが 死んで、残された 人間が 悲しむ。');
+  await say(J_(),'……また、同じことを 繰り返す。');
+  await say('','デスヴァルドは 黙っている。');
+  await say(J_(),'……父さんも、バニカも……');
+  await say(J_('戦闘'),'……どうして、あんな目に 遭わなきゃ いけなかったんだ。');
+  await say(D_('決意'),'……それでも、人間には 生きる 価値が ある。');
+  await say('','ジルは 顔を 上げる。');
+  await say(J_(),'……価値？');
+  await say(D_(),'人間は 愚かだ。だが、互いを 愛し、守り、未来を 築くことも できる。');
+  await say(J_(),'……');
+  await say(D_('決意'),'私は、その 可能性を 信じている。');
+  await sleep(3000);
+  await say(J_(),'……だったら。');
+  await say(J_(),'……人間が、いなくなれば いい。');
+  await say('','デスヴァルドは 目を 見開く。');
+  await say(D_('呆れ'),'……ジル？');
+  await say(J_(),'争う 人間が いなければ、争いは 起きない。');
+  await say(J_('戦闘'),'誰かを 失って、悲しむ 人間も いなくなる！');
+  await say(J_('戦闘'),'……魔物を 生み出す 感情も、なくなる‼');
+  await say(D_('憤怒'),'……それは、救済では ない。');
+  await say(J_(),'……そうかも しれない。');
+  await say(D_('憤怒'),'お前は、何を 言っているのか 分かっているのか？');
+  await say(J_(),'……分かってる。');
+  await say('','ジルは デスヴァルドを 見つめる。');
+  await say(J_(),'……でも、俺は もう……');
+  await say(J_(),'……誰かが 悲しむ 世界を、見たくない。');
+  await say('','デスヴァルドは 静かに 首を 振る。');
+  await say(D_('思索'),'……お前は、私よりも 遠くへ 行ってしまった ようだ。');
+  sfx('ok');
+  await say('','ジルは 剣を 収める。');
+  await say(J_(),'……魔王。');
+  await say(D_(),'……何だ。');
+  await say(J_('戦闘'),'……お前の 理想は、俺が 終わらせる。');
+  F.dir='down';await sleep(500);
+  await say('','ジルは 背を 向ける。');
+  await say(D_('憤怒'),'……待て、ジル。');
+  await jilWalk([[14,9]],'down');
+  await say('','ジルは 立ち止まらない。');
+  await say(D_(),'……お前は、何を する つもりだ。');
+  F.dir='up';await sleep(600);
+  await say('','ジルは 振り返る。');
+  await say(J_(),'……この世界を、終わらせる。');
+  await sleep(1200);
+  P3.cut=false;setStep(87);
+  await p3Ending();
+}
+
+/* ======== 終章 勇者の終わり ======== */
+async function p3Ending(){
+  await fadeTo(1,1600);
+  npcSet([]);P3.fogClear=false;P3.fog=.25;F.px=14;F.py=21;F.dir='down';
+  await sleep(800);await fadeTo(0,1600);
+  await say('','霧が 晴れ始める。\nジルは 一人、海岸を 歩いている。');
+  await jilWalk([[13,21],[12,21]],'left');
+  npcSet([{id:'eC',spr:'celes',x:4,y:21,dir:'right'}]);
+  await say(C_('驚き'),'ジルさん！');
+  await npcWalk('eC',[[5,21],[6,21],[7,21],[8,21],[9,21],[10,21]],3.2,'right');
+  await say('','ジルは 立ち止まる。');
+  await say(C_(),'……無事だったんですね。');
+  await say(J_(),'……ああ。');
+  await say(C_('真剣'),'……何か、あったんですか？');
+  await say(J_(),'……魔王に 会った。');
+  await say(C_('驚き'),'……えっ？');
+  await say(J_(),'……色々、分かったよ。');
+  await say('','セレスは ジルを 見つめる。');
+  await say(C_(),'……ジルさん？');
+  await say(J_(),'……セレス。');
+  await say(C_(),'……はい。');
+  await say(J_(),'……今まで、ありがとう。');
+  await say('','セレスは 言葉を 失う。');
+  await say(C_('困り'),'……どうして、そんなことを 言うんですか？');
+  await say('','ジルは 答えない。');
+  await say(C_('困り'),'……ジルさん？');
+  await say(J_(),'……もう、行かないと。');
+  await say(C_('困り'),'……どこへ？');
+  await say(J_(),'……俺が、やらなきゃ いけないことが ある。');
+  P3.fog=.45;
+  await jilWalk([[13,21],[14,21],[14,20],[14,19]],'up');
+  await say(C_('困り'),'……待ってください！');
+  F.dir='down';await sleep(700);
+  await say('','ジルは 一度だけ 振り返る。');
+  await say(J_(),'……セレス。');
+  await say(C_(),'……');
+  await say(J_(),'……君は、君の 信じることを してくれ。');
+  await say('','セレスは その 言葉の 意味を 理解できない。');
+  F.dir='up';
+  /* 霧の 中へ 消えていく */
+  const fogUp=setInterval(()=>{P3.fog=Math.min(1.25,P3.fog+.03)},120);
+  await jilWalk([[14,18],[14,17],[14,16],[14,15],[14,14]],'up');
+  await sleep(1200);clearInterval(fogUp);
+  await fadeTo(1,2200);ambStop();await sleep(1200);
+  setStep(88);S.flags.p3done=1;saveGame();
+  /* 声が 重なる */
+  await voiceMontage();
+  /* 誰もいない 星見の丘 */
+  S.hideParty=1;F.time='night';loadMap('starhill',8,9,'up');npcSet([]);$('#hud').hidden=true;
+  P3.hideJil=true;
+  AU.cur=null;playMusic('banica');
+  await sleep(1200);await fadeTo(0,3500);
+  await waitSongEnd('banica');
+  await fadeTo(1,3000);stopMusic();P3.hideJil=false;
+  await sleep(1500);
+  location.reload();
+}
+async function voiceMontage(){
+  const host=document.createElement('div');host.style.cssText='position:absolute;inset:0;z-index:70;pointer-events:none;overflow:hidden';$('#app').appendChild(host);
+  const show=(name,text,x,y,life=2600,big=false)=>{const d=document.createElement('div');d.style.cssText=`position:absolute;left:${x}%;top:${y}%;transform:translate(-50%,-50%);color:#e8e8f0;font-size:${big?18:14}px;opacity:0;transition:opacity .8s;white-space:nowrap;text-shadow:0 0 6px #000`;d.innerHTML=(name?`<span style="color:#9aa0b8;font-size:.8em">${name}</span><br>`:'')+text;host.appendChild(d);requestAnimationFrame(()=>d.style.opacity=1);setTimeout(()=>{d.style.opacity=0;setTimeout(()=>d.remove(),900)},life)};
+  const V=[['父','……ジル……無事、だったか……。',30,30],['村の男','ジル！ 帰ってたのか！',68,24],['村の女','あら、ジル……大きくなったわね。',24,62],['アレスタ王','……約束しよう。勇者ジルよ。',70,58],['セレス','ジルさん！',50,40],['父','おはよう、ジル。',62,76],['セレス','……ごめんなさい。',34,82]];
+  for(const[n,t,x,y]of V){show(n,t,x,y,2600);await sleep(650)}
+  await sleep(2400);
+  const L=[['バニカ','……魔王を 倒したら、また 一緒に どこか 行こうよ。'],['ジル','……約束する。'],null,['バニカ','……私、ジルのことが……'],['バニカ','やっぱ、なんでもない！！'],['ジル','気になるだろ。'],['バニカ','今度 教えてあげる！！']];
+  for(const l of L){if(!l){await sleep(1800);continue}show(l[0],l[1],50,50,2100,true);await sleep(2400)}
+  /* ここで 声が 途切れる */
+  host.remove();await sleep(1600);
 }
 
 /* ================= TITLE / BOOT ================= */
