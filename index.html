@@ -5826,7 +5826,7 @@ const C4=(ex='通常')=>C_(ex);
   
   return base()}}
 /* ---- 目的 ---- */
-Object.assign(OBJ4,{100:'……',101:'バニカの 墓へ',102:'ノルヴェルト王都を 歩く／南の 門から リーヴェの村へ',103:()=>S.flags.p4mother?'アレスタ王国へ（村の 南から 出る）':'ジルの 母親を 訪ねよう（村の 左上の 家）',
+Object.assign(OBJ4,{100:'……',101:'バニカの 墓へ',102:'ノルヴェルト王都を 歩く／南の 門から リーヴェの村へ',103:()=>S.flags.p4mother?'アレスタ王国へ（村を 出て 東へ）':'ジルの 母親を 訪ねよう（村の 左上の 家）',
   104:'広場の 怪我人を 助けよう（王都の 中央）',105:'王城へ 向かおう（王都の 北）',106:'王城から 脱出しよう（城の 南）',107:'……',108:'船を 探そう（港の 桟橋）',
   109:()=>S.flags.lumMorning?'白い神殿の 祭壇へ（島の 北の 神殿）':'ルミナス島を 調べよう。宿で 休むと 次の朝（町の 右上の 宿）',110:'神殿の 地下の 転移装置へ',111:'……'});
 /* ---- 第四部の 移動・イベント ---- */
@@ -5838,7 +5838,7 @@ STEP4.push((m,x,y,t,s)=>{
   if(m.id==='ntown'&&y>=m.h-1&&s===102){run(()=>p4ToRieve());return 1}
   if(m.id==='ntown'&&y>=m.h-1){run(async()=>{const j=await selectList({title:'王都を 出る？',items:[{label:'墓地へ'},{label:'船に 乗る'},{label:'やめる'}]});if(j===0)await goMap('ngrave',7,8,'up');else if(j===1)await p4Travel(false);else{F.py-=1}});return 1}
   if(m.id==='ngrave'&&y>=m.h-1&&s>=102){run(()=>goMap('ntown',16,21,'up'));return 1}
-  if(m.id==='rieve'&&y>=m.h-1&&s===103){if(S.flags.p4mother){run(()=>p4ToAlesta());return 1}run(async()=>{await say(C4(),'……まだ、ジルさんの お母さんに 会っていない。');F.py-=1});return 1}
+  if(m.id==='rieve'&&y>=m.h-1&&s===103){if(S.flags.p4mother){run(()=>goMap('world',6,13,'down'));return 1}run(async()=>{await say(C4(),'……まだ、ジルさんの お母さんに 会っていない。');F.py-=1});return 1}
   if(m.id==='rieve'&&y>=m.h-1&&s>103){run(async()=>{const j=await selectList({title:'どうする？',items:[{label:'フィールドへ 出る'},{label:'船で 移動する'},{label:'やめる'}]});if(j===0)await goMap('world',6,13,'down');else if(j===1)await p4Travel(false);else F.py-=1});return 1}
   if(m.id==='alesta'&&s===104&&Math.abs(x-13.5)<3&&y>=9&&y<=12){run(()=>p4Plaza());return 1}
   if(m.id==='alesta'&&s===105&&y<=5&&(x===13||x===14)){run(()=>goMap('castle',13,15,'up'));return 1}
@@ -5869,7 +5869,7 @@ NPC4.ntown=[
   {id:'n4f',spr:'youth',x:22,y:13,wander:1,talk:async()=>{await say('若者','南の 門から 船着き場へ 出られるよ。エルディア大陸へも 船が 出てる。');if(st4()===102)await say(C4(),'……リーヴェの村。ジルさんの 故郷へ 行ってみましょう。')}},
 ];
 NPC4.rieve=[
-  {id:'r4m',spr:'mother',x:4,y:4,talk:async()=>{if(!S.flags.p4mother){await p4Mother();return}await say('ジルの母','……あの子のこと、お願いね。');if(st4()===103)await p4ToAlesta()}},
+  {id:'r4m',spr:'mother',x:4,y:4,talk:async()=>{if(!S.flags.p4mother){await p4Mother();return}await say('ジルの母','……あの子のこと、お願いね。')}},
   {id:'r4a',spr:'man',x:9,y:9,wander:1,talk:async()=>{await say('村人','ジル？ いや、見てないなあ。');await say('村人','あいつ、勇者に なったんだろ？ たまには 顔を 見せりゃいいのに。')}},
   {id:'r4b',spr:'woman',x:17,y:8,wander:1,talk:T4N('村の女',['ジルくん？ 帰ってきてないわよ。','お母さん、あの子の 部屋を 毎日 掃除してるのよ。'])},
   {id:'r4c',spr:'elder',x:16,y:12,talk:T4N('長老',['ジルは 戻っておらん。……何か あったのかね。'])},
@@ -5934,7 +5934,7 @@ async function p4ToRieve(){await fadeTo(1,800);
   setStep(103);p4Open('rieve','seirun');loadMap('rieve',11,17,'up');F.time='day';updateHUD();saveGame();await fadeTo(0,800);
   await say('','エルディア大陸・リーヴェの村。\nかつて ジルが 暮らしていた 村。')}
 async function p4Mother(){S.flags.p4mother=1;
-  const L=SC4.L163;const i=L.findIndex(l=>l[0]==='ジルの母');P3.cut=true;await sc4('L163',{from:Math.max(0,i)});P3.cut=false;await p4ToAlesta()}
+  const L=SC4.L163;const i=L.findIndex(l=>l[0]==='ジルの母');P3.cut=true;await sc4('L163',{from:Math.max(0,i)});P3.cut=false;saveGame();updateHUD()}
 /* ================= 第四章「灰に沈む王都」 ================= */
 const FIRE4=[[3,4],[5,4],[22,4],[24,4],[3,15],[5,16],[22,15],[24,16],[9,8],[18,8],[8,13],[19,13],[2,10],[25,10],[11,18],[16,18]];
 function fxCityFire(){return fxAdd((g,cx,cy,p,now)=>{g.fillStyle=`rgba(150,30,10,${.3+.06*Math.sin(now/260)})`;g.fillRect(0,0,g.canvas.width,g.canvas.height);
@@ -6024,7 +6024,7 @@ async function fadeOutMusic4(ms){const a=AU.files&&AU.cur&&AU.files[AU.cur];if(!
 /* 第四部：村は 元どおり（焼け跡に しない）。移動は 第四部の 処理を 先に */
 {const base=onStep;onStep=function(){if(isP4()&&!P3.cut){const m=F.map;if(m&&p3OnStep(m,F.px,F.py))return}return base()}}
 {const base=loadMap;loadMap=function(id,x,y,dir){if(isP4()&&id==='ruins')id='rieve';return base(id,x,y,dir)}}
-STEP4.push((m,x,y,t,s)=>{if(m.id==='world'&&(t==='V'||t==='Z')){run(()=>goMap('rieve',11,17,'up'));return 1}return 0});
+STEP4.push((m,x,y,t,s)=>{if(m.id==='world'&&(t==='V'||t==='Z')){run(()=>goMap('rieve',11,17,'up'));return 1}if(m.id==='world'&&t==='K'&&s===103&&S.flags.p4mother){run(()=>p4ToAlesta());return 1}if(m.id==='world'&&t==='K'&&s<103){run(async()=>{await say(C4(),'……先に、ジルさんの 故郷へ 行ってみましょう。')});return 1}return 0});
 /* フィールド（エルディア大陸）：第四部では ゴールドモンスターだけが 低い 確率で 出る */
 {const base=encounterCheck;encounterCheck=function(){if(isP4()&&F.map&&F.map.id==='world'){if(S.esc||P3.cut)return;const t=tileAt(F.px,F.py);if('~TWMmS^'.includes(t))return;F.stepsSince=(F.stepsSince||0)+1;if(F.stepsSince<8)return;if(Math.random()>1/60)return;F.stepsSince=0;
   const grp=[pick(['gslime','ggoblin','ggolem'])];run(async()=>{const r=await doBattle({enemies:grp,bg:'field'});await afterNormal(r,grp)});return}return base()}}
