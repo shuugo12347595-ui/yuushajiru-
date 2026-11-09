@@ -5601,6 +5601,8 @@ Object.assign(ENC,{
   elem:[['e_soldier','e_soldier'],['e_cannon','e_cannon','e_soldier'],['e_beast'],['e_golem'],['e_soldier','e_beast']],
 });
 {const base=makeEnemyMesh;makeEnemyMesh=function(type){const d=EDEF[type];if(d&&d.tint&&d.goldOf&&!d.metal){const m=base(d.goldOf);const tc=new THREE.Color(d.tint);for(const mt of m.mats||[])if(mt.color)mt.color.lerp(tc,.55);return m}return base(type)}}
+/* 冒頭（霧の島）で ジルが 呼び出す 魔物：第三部の 終わりくらいの 強さ */
+Object.assign(EDEF,{o_wolf:Object.assign(E4('霧の魔狼','wolf',0,'#8a8aa8'),{hp:800,atk:110,def:30,exp:400,gold:120}),o_slime:Object.assign(E4('霧のスライム','cslime',0,'#a8b0c8'),{hp:650,atk:95,def:25,exp:300,gold:100})});
 
 /* ================= 第四部 ボス ================= */
 /* ---- 3Dモデル ---- */
@@ -5915,7 +5917,7 @@ async function p4Opening(){
   await npcWalk('j4',[[14,12],[14,11],[14,10],[14,9]],1.6);F.npcs=F.npcs.filter(x=>x.id!=='j4');clearInterval(fogUp);
   await say('','そのまま 霧の 向こうへ 姿を 消した。');P3.fog=.55;await fadeOutMusic4(2500);
   P3.cut=false;$('#hud').hidden=false;
-  const r=await doBattle({enemies:['l_wolf','l_slime'],bg:'night',noEscape:true,title:'ジルが 操る 魔物'});
+  const r=await doBattle({enemies:['o_wolf','o_slime'],bg:'night',noEscape:true,title:'ジルが 操る 魔物'});
   F.npcs=F.npcs.filter(x=>!['m1','m2','m3'].includes(x.id));
   if(r.result==='lose'){healParty()}
   await sc4('L16');
