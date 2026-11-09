@@ -450,9 +450,10 @@ function selectList({title='',items,cancel=true,pos='right',start=0,onMove}){
     const w=document.createElement('div');w.className='list win';
     if(title){const t=document.createElement('div');t.className='ttl';t.textContent=title;w.appendChild(t)}
     const els=items.map((it,i)=>{const d=document.createElement('div');d.className='it'+(it.disabled?' dis':'');d.innerHTML=`<span></span>${it.sub!=null?'<span class="sub"></span>':''}`;d.firstChild.textContent=it.label;if(it.sub!=null)d.lastChild.textContent=it.sub;
-      d.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();if(sel===i){h('ok')}else{sel=i;draw();h('ok')}});w.appendChild(d);return d});
+      d.addEventListener('pointerup',e=>{e.preventDefault();e.stopPropagation();if(w._drag)return;sel=i;draw();h('ok')});w.appendChild(d);return d});
+    w.style.touchAction='none';w.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();w._y0=e.clientY;w._st=w.scrollTop;w._drag=false;w._down=true});w.addEventListener('pointermove',e=>{if(!w._down)return;const dy=e.clientY-w._y0;if(Math.abs(dy)>8)w._drag=true;if(w._drag)w.scrollTop=w._st-dy});w.addEventListener('pointerup',()=>{w._down=false;setTimeout(()=>{w._drag=false},0)},true);w.addEventListener('pointercancel',()=>{w._down=false;w._drag=false});w.addEventListener('wheel',e=>{w.scrollTop+=e.deltaY;e.preventDefault()},{passive:false});
     let sel=Math.min(start,items.length-1);
-    const draw=()=>{els.forEach((e,i)=>e.classList.toggle('sel',i===sel));onMove&&onMove(sel)};
+    const draw=()=>{els.forEach((e,i)=>e.classList.toggle('sel',i===sel));if(els[sel]&&w.isConnected)els[sel].scrollIntoView({block:'nearest'});onMove&&onMove(sel)};
     $('#lists').appendChild(w);
     const touch=document.body.classList.contains('is-touch');
     if(pos==='right'){w.style.right='max(16px,env(safe-area-inset-right,0px))';if(document.body.classList.contains('land')&&touch){w.style.top='10px';w.style.right='calc(max(16px,env(safe-area-inset-right,0px)) + 200px)'}else w.style.bottom=touch?'calc(200px + 7.5em + env(safe-area-inset-bottom,0px))':'calc(24px + 7.5em + env(safe-area-inset-bottom,0px))'}
