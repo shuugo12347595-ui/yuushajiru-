@@ -5839,7 +5839,7 @@ STEP4.push((m,x,y,t,s)=>{
   if(m.id==='ntown'&&y>=m.h-1){run(async()=>{const j=await selectList({title:'王都を 出る？',items:[{label:'墓地へ'},{label:'船に 乗る'},{label:'やめる'}]});if(j===0)await goMap('ngrave',7,8,'up');else if(j===1)await p4Travel(false);else{F.py-=1}});return 1}
   if(m.id==='ngrave'&&y>=m.h-1&&s>=102){run(()=>goMap('ntown',16,21,'up'));return 1}
   if(m.id==='rieve'&&y>=m.h-1&&s===103){if(S.flags.p4mother){run(()=>p4ToAlesta());return 1}run(async()=>{await say(C4(),'……まだ、ジルさんの お母さんに 会っていない。');F.py-=1});return 1}
-  if(m.id==='rieve'&&y>=m.h-1&&s>103){run(()=>p4Travel(false));return 1}
+  if(m.id==='rieve'&&y>=m.h-1&&s>103){run(async()=>{const j=await selectList({title:'どうする？',items:[{label:'フィールドへ 出る'},{label:'船で 移動する'},{label:'やめる'}]});if(j===0)await goMap('world',6,13,'down');else if(j===1)await p4Travel(false);else F.py-=1});return 1}
   if(m.id==='alesta'&&s===104&&Math.abs(x-13.5)<3&&y>=9&&y<=12){run(()=>p4Plaza());return 1}
   if(m.id==='alesta'&&s===105&&y<=5&&(x===13||x===14)){run(()=>goMap('castle',13,15,'up'));return 1}
   if(m.id==='alesta'&&y>=m.h-1&&s<106){run(async()=>{await say(C4(),'……まだ、街に 人が 残っている。');F.py-=1});return 1}
@@ -6021,6 +6021,13 @@ async function fadeOutMusic4(ms){const a=AU.files&&AU.cur&&AU.files[AU.cur];if(!
   await new Promise(r=>{const iv=setInterval(()=>{const k=Math.min(1,(performance.now()-t0)/ms);a.volume=v0*(1-k);if(k>=1){clearInterval(iv);r()}},50)});stopMusic();a.volume=v0}
 
 {const base=loadMap;loadMap=function(id,x,y,dir){const r=base(id,x,y,dir);if(isP4()&&id==='alesta'&&(st4()===104||st4()===105)&&!P3.fx.some(f=>f.id==='cityfire')){F.time='dusk';fxCityFire()}return r}}
+/* 第四部：村は 元どおり（焼け跡に しない）。移動は 第四部の 処理を 先に */
+{const base=onStep;onStep=function(){if(isP4()&&!P3.cut){const m=F.map;if(m&&p3OnStep(m,F.px,F.py))return}return base()}}
+{const base=loadMap;loadMap=function(id,x,y,dir){if(isP4()&&id==='ruins')id='rieve';return base(id,x,y,dir)}}
+STEP4.push((m,x,y,t,s)=>{if(m.id==='world'&&(t==='V'||t==='Z')){run(()=>goMap('rieve',11,17,'up'));return 1}return 0});
+/* フィールド（エルディア大陸）：第四部では ゴールドモンスターだけが 低い 確率で 出る */
+{const base=encounterCheck;encounterCheck=function(){if(isP4()&&F.map&&F.map.id==='world'){if(S.esc||P3.cut)return;const t=tileAt(F.px,F.py);if('~TWMmS^'.includes(t))return;F.stepsSince=(F.stepsSince||0)+1;if(F.stepsSince<8)return;if(Math.random()>1/60)return;F.stepsSince=0;
+  const grp=[pick(['gslime','ggoblin','ggolem'])];run(async()=>{const r=await doBattle({enemies:grp,bg:'field'});await afterNormal(r,grp)});return}return base()}}
 
 /* ================= 第四部 第六章「古代の足跡」 ================= */
 Object.assign(OBJ4,{112:()=>S.flags.smith4?'工業地区の 北の 門から 古代工業施設へ':'鍛冶工房を 訪ねよう（街の 左上）',113:'古代工業施設の 奥の 記録装置を 調べよう',114:'宿屋へ（街の 右上）',
