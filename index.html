@@ -5272,7 +5272,7 @@ const BG4={factory:['cave','#1a1612'],demon:['night','#12060e'],dcastle:['castle
 {const base=buildArena;buildArena=function(bg){const a=BG4[bg];const r=base(a?a[0]:bg);if(a&&BS&&BS.sc){}return r}}
 {const base=startBattle;startBattle=function(cfg){const a=BG4[cfg.bg];const p=base(cfg);if(a&&BS&&BS.sc){BS.sc.background=new THREE.Color(a[1]);if(BS.sc.fog)BS.sc.fog.color=new THREE.Color(a[1])}return p}}
 
-/* ---- ゴールドモンスター（1/150。経験値：ゴブリン10,050 基準） ---- */
+/* ---- ゴールドモンスター（出現率は p4Encounter。経験値：ゴブリン10,050 基準） ---- */
 Object.assign(EDEF,{
   gslime:{name:'ゴールドスライム',goldOf:'slime',hp:50,atk:400,def:9999,exp:6030,gold:3000,r:.55,speed:3.2,start:3,wind:.5,act:.4,rec:.5,kind:'hop',reach:1.35,light:true,cd:[.6,1.2],metal:1,flee:1,p4:1},
   ggoblin:{name:'ゴールドゴブリン',goldOf:'goblin',hp:55,atk:500,def:9999,exp:10050,gold:5000,r:.5,speed:4,start:3,wind:.45,act:.3,rec:.5,kind:'swing',reach:1.8,cd:[.6,1.2],metal:1,flee:1,p4:1},
@@ -5283,7 +5283,11 @@ Object.assign(EDEF,{
     for(const mt of m.mats||[]){if(!mt.color)continue;if(d.zombie){mt.color.lerp(new THREE.Color('#4a5a3a'),.5)}else if(d.metal){mt.color.set('#e8b830');if(mt.emissive)mt.emissive.set('#4a3000')}}return m}
   if(P4MESH[type])return P4MESH[type]();return base(type)}}
 const P4MESH={};
-function p4Encounter(grp){if(isP4()&&!F.map.noGold&&Math.random()<1/150)return[pick(['gslime','ggoblin','ggolem'])];return grp}
+/* ゴールド系の 出現：最初のフィールド（エルディア・ヴェルデの森）は 20〜30回に1回（出たら リセット）／遺跡系 10%／それ以外（中盤） 6.5% */
+function p4GoldClass(){const id=F.map&&F.map.id||'';if(id==='world'||id==='verde')return'early';if(/^(fac\d|tdeep|shr\d|elem\d|etop|sunk\d|stemple)$/.test(id))return'ruin';return'mid'}
+function p4Encounter(grp){if(!isP4()||!F.map||F.map.noGold)return grp;const G=()=>[pick(['gslime','ggoblin','ggolem'])];const c=p4GoldClass();
+  if(c==='early'){const f=S.flags;if(!f.p4gN)f.p4gN=20+Math.floor(Math.random()*11);f.p4gC=(f.p4gC||0)+1;if(f.p4gC>=f.p4gN){f.p4gC=0;f.p4gN=20+Math.floor(Math.random()*11);return G()}return grp}
+  return Math.random()<(c==='ruin'?.10:.065)?G():grp}
 {const base=encounterCheck;encounterCheck=function(){if(!isP4())return base();
   if(S.esc||P3.cut)return;const t=tileAt(F.px,F.py);if(!(F.map.enc||'').includes(t))return;F.stepsSince++;if(F.stepsSince<6)return;if(Math.random()>(F.map.encRate||.075))return;F.stepsSince=0;
   const eT=F.map.id==='verde'?'forest4':F.map.encT;const grp=p4Encounter(pick(ENC[eT]&&ENC[eT].length?ENC[eT]:ENC.lumi4));run(async()=>{const r=await doBattle({enemies:grp,bg:F.map.bg||'field'});await afterNormal(r,grp)})}}
@@ -5620,7 +5624,7 @@ Object.assign(ENC,{
 {const base=makeEnemyMesh;makeEnemyMesh=function(type){const d=EDEF[type];if(d&&d.tint&&d.goldOf&&!d.metal){const m=base(d.goldOf);const tc=new THREE.Color(d.tint);for(const mt of m.mats||[])if(mt.color)mt.color.lerp(tc,.55);return m}return base(type)}}
 /* 冒頭（霧の島）で ジルが 呼び出す 魔物：第三部の 終わりくらいの 強さ */
 Object.assign(EDEF,{o_wolf:Object.assign(E4('霧の魔狼','wolf',0,'#8a8aa8'),{hp:800,atk:110,def:30,exp:400,gold:120}),o_slime:Object.assign(E4('霧のスライム','cslime',0,'#a8b0c8'),{hp:650,atk:95,def:25,exp:300,gold:100})});
-/* ヴェルデの森：第一部と 同じ 顔ぶれ。経験値 多め（500〜700）の レベル上げ用。ゴールド系は 1/150 */
+/* ヴェルデの森：第一部と 同じ 顔ぶれ。経験値 多め（500〜700）の レベル上げ用。ゴールド系は 20〜30回に1回 */
 (function(){const V=(id,base,hp,atk,def,exp)=>{const b=EDEF[base]||{};EDEF[id]=Object.assign({},b,{goldOf:base,p4:1,hp,atk,def,exp,gold:Math.round(exp/4)});delete EDEF[id].tint};
   V('v_goblin','goblin',850,115,30,550);V('v_wolf','wolf',780,110,26,500);V('v_golem','golem',1200,125,45,700);V('v_bwolf','bwolf',900,120,30,650);V('v_rslime','rslime',800,112,28,600);V('v_slime','slime',650,95,22,500);
   ENC.forest4=[['v_goblin'],['v_goblin','v_wolf'],['v_golem'],['v_bwolf','v_goblin'],['v_rslime','v_goblin'],['v_golem','v_slime'],['v_wolf','v_wolf','v_goblin'],['v_goblin','v_goblin']];
@@ -6047,7 +6051,7 @@ async function fadeOutMusic4(ms){const a=AU.files&&AU.cur&&AU.files[AU.cur];if(!
 {const base=onStep;onStep=function(){if(isP4()&&!P3.cut){const m=F.map;if(m&&p3OnStep(m,F.px,F.py))return}return base()}}
 {const base=loadMap;loadMap=function(id,x,y,dir){if(isP4()&&id==='ruins')id='rieve';return base(id,x,y,dir)}}
 STEP4.push((m,x,y,t,s)=>{if(m.id==='world'&&(t==='V'||t==='Z')){run(()=>goMap('rieve',11,17,'up'));return 1}if(m.id==='world'&&t==='K'&&s===103&&S.flags.p4mother){run(()=>p4ToAlesta());return 1}if(m.id==='world'&&t==='K'&&s<103){run(async()=>{await say(C4(),'……先に、ジルさんの 故郷へ 行ってみましょう。')});return 1}return 0});
-/* フィールド（エルディア大陸）：第四部の 敵（ゴールドモンスターは 1/150） */
+/* フィールド（エルディア大陸）：第四部の 敵（ゴールド系は 20〜30回に1回） */
 {const base=encounterCheck;encounterCheck=function(){if(isP4()&&F.map&&F.map.id==='world'){if(S.esc||P3.cut)return;const t=tileAt(F.px,F.py);if('~TWMmS^'.includes(t))return;F.stepsSince=(F.stepsSince||0)+1;if(F.stepsSince<8)return;if(Math.random()>.075)return;F.stepsSince=0;
   const grp=p4Encounter(pick(ENC.lumi4));run(async()=>{const r=await doBattle({enemies:grp,bg:'field'});await afterNormal(r,grp)});return}return base()}}
 
