@@ -2560,7 +2560,7 @@ function damageEnemy(e,mult,kind,fixed,ign=0){
     return}
   if(BS.cfg.queen&&queenDamage(e,kind))return;
   if(enemyDefend(e,kind))return;
-  let dmg=fixed!=null?fixed:Math.max(1,Math.round((actAtk()*atkBuff()*mult*PLAYER_DMG-e.d.def*.5*(1-ign))*rnd(.9,1.1)));
+  let dmg=fixed!=null?fixed:Math.max(1,Math.round((actAtk()*atkBuff()*mult*PLAYER_DMG-e.d.def*.5*(1-ign))*rnd(.9,1.1)));if(fixed==null&&isP4()&&curK()==='celes'&&kind!=='magic')dmg=Math.max(dmg,Math.ceil(actAtk()*atkBuff()*mult*PLAYER_DMG*.95));
   if(b.ails&&b.ails[curK()]&&b.ails[curK()].weak>0)dmg=Math.max(1,Math.round(dmg*.7));
   if(b.cfg.queen){dmg=queenFloor(e,dmg);if(!dmg)return}if(isP4()){dmg=p4Dmg(e,dmg,kind);if(!dmg)return}
   if(e.d.immortal){/* 木人：ダメージ表示のみ */if(e.type==='infected'){e.state='stagger';e.st=0;hideTele(e)}}else e.hp-=dmg;
