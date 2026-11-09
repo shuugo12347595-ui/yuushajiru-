@@ -2547,7 +2547,7 @@ function useHerb(){const b=BS,pl=b.pl;if(b.tut){const A=ACT();if(!(P.items.herb>
     pl.state='item';pl.st=0;sfx('heal');burst(pl.pos,'#7dff9a',10,2.5)})}
 function doPlayerHit(combo){
   const b=BS,pl=b.pl;let any=false;
-  for(const e of b.enemies){if(e.dead)continue;const d=e.pos.distanceTo(pl.pos);if(d>2.0+e.d.r)continue;if(angDiff(pl.face,angTo(pl.pos,e.pos))>1.35&&d>1)continue;
+  for(const e of b.enemies){if(e.dead)continue;const d=e.pos.distanceTo(pl.pos);if(d>2.0*(isP4()?p4Reach():1)+e.d.r)continue;if(angDiff(pl.face,angTo(pl.pos,e.pos))>1.35&&d>1)continue;
     any=true;const mult=e.state==='stagger'?counterMul():comboMul(combo);damageEnemy(e,mult,e.state==='stagger'?'counter':combo===3?'heavy':'')}
   if(any){b.hitstop=combo===3?.07:.045}
 }
@@ -6349,6 +6349,91 @@ const SEEDMAPS={fac2:[[2,19],3],fac3:[[14,21],2],fac4:[[15,21],2],maouryo:[[3,29
     MAPMETA.seeds[id]=[];for(const[x,y]of pick){rows[y][x]='c';const kind=kinds[n++%kinds.length];MAPMETA.seeds[id].push([x,y,kind]);
       CHESTS[id+':'+x+','+y]={fn:async key=>{S.opened[key]=1;sfx('chest');P.items['seed_'+kind]=(P.items['seed_'+kind]||0)+1;await say('',`宝箱の 中に ${SEED4[kind][0]}が 入っていた！\n（どうぐ から 食べると ${SEED4[kind][1]}が 上がる）`);updateHUD()}}}
     BASE[id]=rows.map(r=>r.join(''))}})();
+
+/* ================= 第四部 剣技（ユーザー指定の 一覧） ================= */
+for(const id of Object.keys(SKILLS))if(/^(k|c)_/.test(id))delete SKILLS[id];
+const SK4=(who,lv,name,sp,o,desc)=>Object.assign({who,lv,name,sp,pt:lv>=100?6:lv>=80?4:lv>=60?3:2,desc},o);
+Object.assign(SKILLS,{
+  /* セレス：ヒーラー兼剣士 */
+  c_ichisen:SK4('celes',40,'白刃一閃',14,{t:'slash',mult:2.5,arc:1.1,range:2.8,dur:.3,hitAt:.08},'高速斬撃（×2.5）'),
+  c_fuyo:SK4('celes',45,'聖刃付与',20,{t:'buff',buff:'p4edge',dur:20},'20秒間、刀の ダメージ20%上昇'),
+  c_sanren:SK4('celes',50,'三連白刃',22,{t:'multi',mult:4.0,hits:3,gap:.12},'3連撃（合計×4.0）'),
+  c_seigo:SK4('celes',55,'聖護の構え',20,{t:'buff',buff:'p4guard',dur:12},'12秒間、受ける ダメージ30%軽減'),
+  c_tsukikage:SK4('celes',60,'月影返し',18,{t:'stance',mult:4.5,parry:1,win:1},'構えて 敵の 攻撃を 受け流し、反撃（×4.5）'),
+  c_hakuyu:SK4('celes',65,'白癒の剣',30,{t:'slash',mult:3.5,arc:1.3,range:2.8,dur:.36,hitAt:.1,heal:.2},'斬撃と 同時に 味方全員の HPを 回復（×3.5）'),
+  c_batto:SK4('celes',70,'聖光抜刀',34,{t:'single',mult:6.0,wind:.32},'光を まとった 居合斬り（×6.0）'),
+  c_chikai:SK4('celes',75,'守護の誓い',30,{t:'buff',buff:'p4pguard',dur:15,party:1},'15秒間、味方全員の 受ける ダメージ25%軽減'),
+  c_byakuren:SK4('celes',80,'白蓮乱舞',44,{t:'multi',mult:8.0,hits:6,gap:.08},'高速連続斬り（合計×8.0）'),
+  c_kenri:SK4('celes',85,'神聖剣域',36,{t:'buff',buff:'p4ryouiki',dur:15},'15秒間、刀の リーチと 攻撃速度が 上がる'),
+  c_tenrin:SK4('celes',90,'天輪斬',52,{t:'spin',mult:10.0,big:1},'広範囲斬撃（×10.0）'),
+  c_gokui:SK4('celes',95,'白刃極意',40,{t:'buff',buff:'p4gokui',dur:20},'20秒間、刀の 攻撃力35%上昇'),
+  c_lumi:SK4('celes',100,'天聖・ルミナスレイ',0,{t:'single',mult:18.0,wind:1.4,ult:1,allMp:1},'全魔力を 刀に 集中させる 究極斬撃（×18.0）。MPを すべて 使う'),
+  /* カイル：剣術・居合型 */
+  k_hayate:SK4('kyle',40,'疾風斬り',14,{t:'dash',mult:2.5},'高速 踏み込み斬撃（×2.5）'),
+  k_kaeshi:SK4('kyle',45,'返し刃',16,{t:'stance',mult:3.0,parry:1,win:.8},'構えて 攻撃を 受け流し、反撃（×3.0）'),
+  k_senpu:SK4('kyle',50,'旋風斬',20,{t:'spin',mult:3.5},'周囲への 回転斬り（×3.5）'),
+  k_tenjin:SK4('kyle',55,'居合・天神無双',0,{t:'stance',tenjin:1,win:1,mp:80,ct:12},'1秒 構え、その間に 受けた ダメージ×2＋刀の攻撃力×1.5で 反撃。敵の 防御を 無視・上限なし（MP80／12秒）'),
+  k_hien:SK4('kyle',60,'飛燕連斬',26,{t:'multi',mult:5.0,hits:3,gap:.1},'高速3連撃（合計×5.0）'),
+  k_zantetsu:SK4('kyle',65,'斬鉄',22,{t:'buff',buff:'p4zantetsu',dur:8},'8秒間、敵の 防御力を 30%無視'),
+  k_muei:SK4('kyle',70,'無影斬',32,{t:'rush',mult:6.0,behind:1},'敵の 背後へ 移動して 斬撃（×6.0）'),
+  k_fudo:SK4('kyle',75,'不動の構え',22,{t:'buff',buff:'p4guard',dur:8},'8秒間、受ける ダメージ30%軽減'),
+  k_hachiren:SK4('kyle',80,'八連閃',42,{t:'multi',mult:8.0,hits:8,gap:.07},'高速8連撃（合計×8.0）'),
+  k_shura:SK4('kyle',85,'修羅の太刀',34,{t:'buff',buff:'p4shura',dur:15},'15秒間、攻撃速度20%・会心率15ポイント上昇'),
+  k_tensho:SK4('kyle',90,'天翔斬',50,{t:'heavy',mult:10.0,wind:.42},'跳躍からの 強烈な 斬撃（×10.0）'),
+  k_ittou:SK4('kyle',95,'一刀両断',56,{t:'single',mult:12.0,wind:.45},'単体への 強力な 斬撃（×12.0）'),
+  k_tendan:SK4('kyle',100,'奥義・天断一閃',0,{t:'single',mult:22.0,wind:1.5,ult:1,allMp:1},'全魔力を 解放する 究極の 一撃（×22.0）。MPを すべて 使う'),
+});
+/* 剣技の 枠：セレス＝スキル。カイル＝スキル・魔法・魔法２ の 3つ */
+{const base=p4AutoSkills;p4AutoSkills=function(a){a.skills4=(a.skills4||[]).filter(id=>SKILLS[id]);for(const k of['eqSkill','eqSkill2','eqSkill3'])if(a[k]&&!SKILLS[a[k]])a[k]=null;
+  if(a.key==='kyle'&&a.pts==null)a.pts=4;a.pts=a.pts||0;if(a.eqSkill&&!a.skills4.includes(a.eqSkill))a.eqSkill=a.skills4[0]||null}}
+p4Magic2=function(){const k=curK(),a=ACT();if(k==='kyle'){if(!a.eqSkill3){popup(BS.pl.pos,'剣技を セットしていない','g');return}return kyleArt(a.eqSkill3)}if(k==='celes')return castGirlSlot(1)};
+curEqSkill=function(){const k=curK();if(k==='jil'||!isP4())return P.eqSkill||'soukou';return ACT().eqSkill||null};
+/* 発動：MP消費・クールタイム・全魔力・回復 */
+{const base=startSkill;startSkill=function(){if(!isP4()||curK()==='jil')return base();const pl=BS.pl,a=ACT(),id=curEqSkill(),sk=SKILLS[id];
+  if(!sk){popup(pl.pos,'剣技を セットしていない（キャラ画面で 習得）','g');return}
+  BS.ct4=BS.ct4||{};const key=curK()+id;if(sk.ct&&BS.ct4[key]>BS.t){popup(pl.pos,`あと ${Math.ceil(BS.ct4[key]-BS.t)}秒`,'g');return}
+  if(sk.mp&&a.mp<sk.mp){popup(pl.pos,'MP不足','g');return}if(sk.allMp&&a.mp<1){popup(pl.pos,'MP不足','g');return}
+  const sp0=P.sp;base();if(pl.state!=='skill'||pl.skillId!==id){P.sp=sp0;return}
+  if(sk.mp)a.mp-=sk.mp;if(sk.ct)BS.ct4[key]=BS.t+sk.ct;if(sk.allMp){P4.allMpUsed=a.mp;a.mp=0;banner(sk.name,1500);ringFx(pl.pos,'#ffffff',4,.6);flash(200,'#e8f0ff')}
+  if(sk.heal){for(const p of BS.party){if(p.a.hp>0)p.a.hp=Math.min(p.a.mhp,p.a.hp+Math.round(p.a.mhp*sk.heal))}popup(pl.pos,'味方全員 回復','h');sfx('heal')}
+  if(sk.party&&sk.buff){for(const k in BS.bufs)BS.bufs[k][sk.buff]=sk.dur}
+  if(sk.t==='stance'){pl.stance4={id,t0:BS.t,win:sk.win||1};ringFx(pl.pos,curK()==='kyle'?'#cfd8ff':'#fff2c0',2,.4);banner(sk.name+'（構え）',700)}}}
+/* バフの 効果 */
+{const base=atkBuff;atkBuff=function(){let v=base();const f=BS&&BS.pl&&BS.pl.buf;if(!f||!isP4())return v;if(f.p4edge>0)v*=1.2;if(f.p4gokui>0)v*=1.35;return v}}
+{const base=dmgCut;dmgCut=function(m){let v=base(m);const f=BS&&BS.pl&&BS.pl.buf;if(!f||!isP4())return v;if(f.p4guard>0)v*=.7;if(f.p4pguard>0)v*=.75;return v}}
+function p4Reach(){const f=BS&&BS.pl&&BS.pl.buf;return f&&f.p4ryouiki>0?1.35:1}
+{const base=p4Tick;p4Tick=function(b,dt){base(b,dt);const pl=b.pl,f=pl.buf||{};if((f.p4shura>0||f.p4ryouiki>0)&&(pl.state==='attack'||pl.state==='skill'))pl.st+=dt*.2;
+  if(pl.stance4&&(pl.state!=='skill'||b.t-pl.stance4.t0>pl.stance4.win))pl.stance4=null;
+  if(pl.state==='skill'&&SKILLS[pl.skillId]&&SKILLS[pl.skillId].t==='stance'){if(pl.stance4)pl.st=Math.min(pl.st,.1);else{pl.state='idle';pl.st=0}}
+  if(pl.state==='skill'&&SKILLS[pl.skillId]&&SKILLS[pl.skillId].behind&&pl.hitDone&&!pl._behind){pl._behind=1;const tg=pl.rushT;if(tg&&!tg.dead){const d=V3(Math.sin(pl.face),0,Math.cos(pl.face));pl.pos.copy(tg.pos).addScaledVector(d,1.4+tg.d.r);pl.face+=Math.PI}}
+  if(pl.state!=='skill')pl._behind=0}}
+/* 会心（カイル：陸奥守吉行・修羅の太刀）・斬鉄・天神無双の 反撃 */
+{const base=p4Dmg;p4Dmg=function(e,dmg,kind){if(P4.raw4!=null){const v=P4.raw4;P4.raw4=null;return v}dmg=base(e,dmg,kind);if(!dmg)return dmg;
+  const f=BS&&BS.pl&&BS.pl.buf||{};if(f.p4zantetsu>0&&kind!=='magic')dmg+=Math.round((e.d.def||0)*.5*.3);
+  if(curK()==='kyle'&&kind!=='magic'){const g=p4Gear(ACT());const cr=(g.wpn==='mutsu'?.12:0)+(f.p4shura>0?.15:0);if(cr>0&&Math.random()<cr){dmg=Math.round(dmg*(1.5+(g.wpn==='mutsu'?.25:0)));popup(e.pos,'会心！','g')}}
+  return dmg}}
+{const base=resolveEnemyHit;resolveEnemyHit=function(e){const b=BS,pl=b&&b.pl;const st=pl&&pl.stance4;
+  if(isP4()&&st&&pl.state==='skill'&&b.t-st.t0<=st.win){const sk=SKILLS[st.id];pl.stance4=null;
+    if(sk.tenjin){const A=ACT(),h0=A.hp;base(e);const D=Math.max(0,h0-A.hp);if(A.hp<=0)return;const g=p4Gear(A),blade=(GEAR4[g.wpn]||{}).atk||0;const v=Math.round(D*2+blade*1.5);
+      sfx('parry');flash(160,'#ffffff');b.hitstop=.2;slashFx(pl.pos,angTo(pl.pos,e.pos),true,'#ffffff',2.2);P4.raw4=Math.max(1,v);damageEnemy(e,1,'skill');banner('居合・天神無双',1100);pl.state='idle';pl.st=0;return}
+    sfx('parry');b.hitstop=.12;popup(pl.pos,'受け流し！','g');pl.face=angTo(pl.pos,e.pos);slashFx(pl.pos,pl.face,true,'#fff2c0',1.6);damageEnemy(e,sk.mult,'counter');e.state='stagger';e.st=0;pl.state='idle';pl.st=0;return}
+  return base(e)}}
+/* キャラ画面：カイルは 剣技を 3つ セット */
+{const base=p4CharMenu;p4CharMenu=async function(k){if(k!=='kyle')return base(k);const a=actorOf(k);
+  while(true){const g=p4Gear(a);const gn=s=>g[s]?GEAR4[g[s]].name:'－';const nm=id=>id&&SKILLS[id]?SKILLS[id].name:'－';
+    const info=`${a.name}　Lv ${a.lv}（次まで ${a.lv>=100?'－':(expNext4(a.lv)-(a.exp||0)).toLocaleString()}）\nHP ${a.hp}/${a.mhp}　MP ${a.mp}/${a.mmp}\n攻撃 ${a.atk}　防御 ${a.def}　武器：${gn('wpn')}\n防具：${gn('arm')}　装飾：${gn('acc')}`;
+    const items=[{label:'習得する',sub:`${a.pts||0} AP`},{label:'スキルボタンの 剣技',sub:nm(a.eqSkill)},{label:'魔法ボタンの 剣技',sub:nm(a.eqSkill2)},{label:'魔法２ボタンの 剣技',sub:nm(a.eqSkill3)},{label:'装飾品を かえる'},{label:'もどる'}];
+    const j=await selectList({title:info,items});if(j<0||j===5)return;
+    if(j===0){const list=Object.keys(SKILLS).filter(id=>SKILLS[id].who==='kyle'&&!a.skills4.includes(id)).sort((x,y)=>SKILLS[x].lv-SKILLS[y].lv);if(!list.length){await say('','覚えられる 剣技は もう ない。');continue}
+      const s=await selectList({title:`習得（のこり ${a.pts||0} AP）`,items:list.map(id=>{const d=SKILLS[id],lk=d.lv>a.lv;return{label:'剣技 '+d.name,sub:lk?`Lv${d.lv}から`:`${d.pt}AP・${d.mp?'MP'+d.mp:d.allMp?'MP全部':'SP'+d.sp}`,disabled:lk||d.pt>(a.pts||0)}})});
+      if(s>=0){const id=list[s],d=SKILLS[id];a.pts-=d.pt;a.skills4.push(id);sfx('level');await say('',`カイルは ${d.name}を 覚えた！\n${d.desc}`);if(!a.eqSkill)a.eqSkill=id;else if(!a.eqSkill2)a.eqSkill2=id;else if(!a.eqSkill3)a.eqSkill3=id}continue}
+    if(j>=1&&j<=3){const key=['eqSkill','eqSkill2','eqSkill3'][j-1];const ids=a.skills4;if(!ids.length){await say('','まだ 剣技を 覚えていない。キャラ画面の「習得する」から 覚えよう。');continue}
+      const s=await selectList({title:items[j].label,items:ids.map(id=>({label:(a[key]===id?'▶':'')+SKILLS[id].name,sub:SKILLS[id].desc}))});if(s>=0){a[key]=ids[s];sfx('ok')}continue}
+    if(j===4){const own=Object.keys(S.flags.gear4||{}).filter(id=>GEAR4[id].slot==='acc');if(!own.length){await say('','装飾品を 持っていない。');continue}
+      const s=await selectList({title:'装飾品',items:[...own.map(id=>({label:(g.acc===id?'▶':'')+GEAR4[id].name,sub:GEAR4[id].desc})),{label:'はずす'}]});if(s>=0){const o=partyList().find(x=>x!==k&&p4Gear(actorOf(x)).acc===own[s]);if(o)p4Gear(actorOf(o)).acc=null;g.acc=own[s]||null;p4Recalc(a);sfx('ok')}}}}}
+p4HerbText=function(){const A=ACT(),K=curK();const nm=id=>id&&SKILLS[id]?SKILLS[id].name:'－';
+  if(K==='kyle')$('#bhud .herb').textContent=`スキル：${nm(A.eqSkill)} ／ 魔法：${nm(A.eqSkill2)} ／ 魔法２：${nm(A.eqSkill3)}`;
+  else{const m1=A.slots[0]?SPELLS[A.slots[0]].name:'－',m2=A.slots[1]?SPELLS[A.slots[1]].name:'－';$('#bhud .herb').textContent=`剣技 ${nm(A.eqSkill)} ／ 魔法１：${m1} ／ 魔法２：${m2}`}};
 
 /* ================= TITLE / BOOT ================= */
 async function titleScreen(){
