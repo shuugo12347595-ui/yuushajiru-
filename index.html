@@ -5286,12 +5286,12 @@ const P4MESH={};
 function p4Encounter(grp){if(isP4()&&!F.map.noGold&&Math.random()<1/150)return[pick(['gslime','ggoblin','ggolem'])];return grp}
 {const base=encounterCheck;encounterCheck=function(){if(!isP4())return base();
   if(S.esc||P3.cut)return;const t=tileAt(F.px,F.py);if(!(F.map.enc||'').includes(t))return;F.stepsSince++;if(F.stepsSince<6)return;if(Math.random()>(F.map.encRate||.075))return;F.stepsSince=0;
-  const grp=p4Encounter(pick(ENC[F.map.encT]));run(async()=>{const r=await doBattle({enemies:grp,bg:F.map.bg||'field'});await afterNormal(r,grp)})}}
+  const grp=p4Encounter(pick(ENC[F.map.encT]&&ENC[F.map.encT].length?ENC[F.map.encT]:ENC.lumi4));run(async()=>{const r=await doBattle({enemies:grp,bg:F.map.bg||'field'});await afterNormal(r,grp)})}}
 /* 魔笛（魔王城で 手に入る。30%で ゴールドモンスター） */
 ITEMS.mateki={name:'魔笛',desc:'吹くと 魔物を 呼び寄せる。30%で ゴールドモンスターが 現れる',key:1};
-async function useMateki(){if(mode!=='field'||!F.map.encT){await say('','ここでは 吹いても 何も 起きない。');return}
+async function useMateki(){if(mode!=='field'||!(F.map.enc||F.map.world)){await say('','ここでは 吹いても 何も 起きない。');return}
   sfx('tele');await say('','セレスは 魔笛を 吹いた。\n不気味な 音色が 響き渡る……');
-  const grp=Math.random()<.3?[pick(['gslime','ggoblin','ggolem'])]:pick(ENC[F.map.encT]);const r=await doBattle({enemies:grp,bg:F.map.bg||'field'});await afterNormal(r,grp)}
+  const grp=Math.random()<.3?[pick(['gslime','ggoblin','ggolem'])]:pick(ENC[F.map.encT]||ENC.lumi4);const r=await doBattle({enemies:grp,bg:F.map.bg||'field'});await afterNormal(r,grp)}
 
 /* ---- 暗闇（魔王領・黒の回廊）・吹雪 ---- */
 function p4DarkDraw(g,cx,cy){const m=F.map;if(!m)return;const W=g.canvas.width,H=g.canvas.height;
