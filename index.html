@@ -5156,32 +5156,30 @@ Object.assign(SKILLS,{
   k_getsu:{name:'月影',sp:34,lv:78,t:'slash',mult:3.1,arc:1.9,range:3.8,dur:.45,hitAt:.16,big:1,who:'kyle',desc:'前方を 大きく 薙ぐ（×3.10）'},
   k_shin:{name:'神速八連',sp:48,lv:86,t:'multi',mult:4.6,hits:8,gap:.07,who:'kyle',desc:'目にも 止まらぬ 8連撃（合計×4.60）'},
   k_ura:{name:'裏一閃',sp:56,lv:94,t:'single',mult:5.2,wind:.4,who:'kyle',desc:'全てを 込めた 一閃（×5.20）'},
-  k_ten:{name:'奥義・天断一閃',sp:0,lv:100,t:'single',mult:22,wind:1.5,ult:1,allMp:1,who:'kyle',desc:'陸奥守吉行に 全魔力を 集中させる 居合斬り（×22.0）。現在MPを すべて使う'},
   c_slash:{name:'白刃',sp:10,lv:1,t:'slash',mult:1.1,arc:1.1,range:2.6,dur:.32,hitAt:.1,who:'celes',desc:'基本の 斬撃（×1.10）'},
   c_holy:{name:'聖光斬',sp:16,lv:56,t:'wave',mult:1.4,who:'celes',desc:'光を まとった 斬撃を 飛ばす（×1.40）'},
   c_ring:{name:'光輪',sp:22,lv:68,t:'spin',mult:1.6,who:'celes',desc:'回転して 周りを 斬る（×1.60）'},
   c_judge:{name:'断罪の剣',sp:32,lv:84,t:'single',mult:2.6,wind:.35,who:'celes',desc:'聖なる 一閃（×2.60）'},
 });
-/* セレスの 究極魔法 */
-SPELLS.c_lumi={who:'celes',name:'天聖・ルミナスレイ',lv:100,pt:0,mp:1,pow:18,el:'light',t:'ray',ct:3,ult:1,allMp:1,desc:'全魔力を 光の奔流に 変える（×18.0）。現在MPを すべて使う'};
+
 function p4AutoSkills(a){const k=a.key;const own=Object.keys(SKILLS).filter(id=>SKILLS[id].who===k&&SKILLS[id].lv<=a.lv&&!SKILLS[id].allMp);
   a.skills4=own;if(!own.includes(a.eqSkill))a.eqSkill=own[own.length-1];if(k==='kyle'&&!own.includes(a.eqSkill2))a.eqSkill2=own[0];
   if(k==='celes'){for(const id in SPELLS){const sp=SPELLS[id];if(sp.who==='celes'&&sp.lv<=a.lv&&!a.magics.includes(id))a.magics.push(id)}}}
 function curEqSkill(){const k=curK();if(k==='jil'||!isP4())return P.eqSkill||'soukou';return ACT().eqSkill||'c_slash'}
-/* 魔法ボタン：セレス＝魔法１、カイル＝剣技２。魔法２ボタン：セレス＝魔法２、カイル＝奥義（Lv100） */
+/* 魔法ボタン：セレス＝魔法１、カイル＝剣技２。魔法２ボタン：セレス＝魔法２（究極スキルは ユーザーが 決める） */
 function castGirlSlot(i){const a=ACT();if(!a.slots[i]){popup(BS.pl.pos,'魔法がない','g');return}a.sel=i;castGirl()}
 function kyleArt(id){const a=ACT();const sk=SKILLS[id];if(!sk){popup(BS.pl.pos,'剣技がない','g');return}
   if(sk.allMp){if(a.mp<1){popup(BS.pl.pos,'MP不足','g');return}}
   const keep=a.eqSkill;a.eqSkill=id;P4.allMp=sk.allMp?a.mp:0;startSkill();a.eqSkill=keep;if(sk.allMp&&BS.pl.state==='skill'){a.mp=0;banner('奥義・天断一閃',1400);ringFx(BS.pl.pos,'#e8f0ff',4,.6)}}
 function p4MagicBtn(){const k=curK();if(k==='kyle')return kyleArt(ACT().eqSkill2);if(k==='celes'&&isSwordK(k))return castGirlSlot(0);if(k==='jil')return castMagic();return castGirl()}
-function p4Magic2(){const k=curK();const a=ACT();if(k==='kyle'){if(a.lv<100){popup(BS.pl.pos,'奥義は Lv100で 覚える','g');return}return kyleArt('k_ten')}
+function p4Magic2(){const k=curK();const a=ACT();if(k==='kyle'){popup(BS.pl.pos,'（究極スキルは 準備中）','g');return}
   if(k==='celes')return castGirlSlot(1)}
 /* 究極魔法は 現在MPを すべて使う */
 {const base=fireSpell;fireSpell=function(){const a=ACT(),sp=SPELLS[BS.pl.castId];if(sp&&sp.allMp){const m=a.mp;if(m<1){popup(BS.pl.pos,'MP不足','g');return}base();a.mp=0;b4Flash('#fff6c8');return}return base()}}
 function b4Flash(c){try{flash(300,c)}catch(e){}}
 /* 戦闘HUDの 説明（第四部の 剣士） */
 function p4HerbText(){const A=ACT(),K=curK();const sk=SKILLS[curEqSkill()]||SKILLS.c_slash;
-  if(K==='kyle'){const s2=SKILLS[A.eqSkill2];$('#bhud .herb').textContent=`剣技 ${sk.name}（SP${sk.sp}）／ 魔法ボタン：${s2?s2.name:'－'}`+(A.lv>=100?' ／ 魔法２：奥義':'')}
+  if(K==='kyle'){const s2=SKILLS[A.eqSkill2];$('#bhud .herb').textContent=`剣技 ${sk.name}（SP${sk.sp}）／ 魔法ボタン：${s2?s2.name:'－'}`}
   else{const m1=A.slots[0]?SPELLS[A.slots[0]].name:'－',m2=A.slots[1]?SPELLS[A.slots[1]].name:'－';$('#bhud .herb').textContent=`剣技 ${sk.name}（SP${sk.sp}）／ 魔法１：${m1} ／ 魔法２：${m2}`}}
 
 /* ---- 第四部の ダメージ計算（メモの式：攻撃力×倍率×0.7−防御力×0.5） ---- */
@@ -5207,7 +5205,7 @@ function p4AfterHurt(){const b=BS;if(!b||!isP4())return;const A=ACT();if(curK()=
   for(const k of partyList()){const a=actorOf(k);if(a.lv>=100)continue;a.exp=(a.exp||0)+r.exp;
     while(a.lv<100&&a.exp>=expNext4(a.lv)){a.exp-=expNext4(a.lv);const o={hp:a.mhp,atk:a.atk,matk:a.matk,def:a.def};a.lv++;p4Recalc(a);a.hp=Math.min(a.mhp,a.hp+(a.mhp-o.hp));
       const before=(a.skills4||[]).slice();p4AutoSkills(a);const neu=(a.skills4||[]).filter(x=>!before.includes(x));sfx('level');
-      await say('',`${a.name}は レベル${a.lv}に あがった！\n最大HP+${a.mhp-o.hp}　攻撃力+${a.atk-o.atk}　魔法攻撃+${a.matk-o.matk}　防御+${a.def-o.def}`+(neu.length?`\n剣技「${neu.map(x=>SKILLS[x].name).join('」「')}」を 覚えた！`:'')+(a.lv===100?`\n${k==='kyle'?'奥義・天断一閃':'天聖・ルミナスレイ'}を 覚えた！`:''))}
+      await say('',`${a.name}は レベル${a.lv}に あがった！\n最大HP+${a.mhp-o.hp}　攻撃力+${a.atk-o.atk}　魔法攻撃+${a.matk-o.matk}　防御+${a.def-o.def}`+(neu.length?`\n剣技「${neu.map(x=>SKILLS[x].name).join('」「')}」を 覚えた！`:''))}
     if(a.lv>=100)a.exp=0}
   await endBattle('win')}}
 
