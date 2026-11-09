@@ -5286,7 +5286,7 @@ const P4MESH={};
 function p4Encounter(grp){if(isP4()&&!F.map.noGold&&Math.random()<1/150)return[pick(['gslime','ggoblin','ggolem'])];return grp}
 {const base=encounterCheck;encounterCheck=function(){if(!isP4())return base();
   if(S.esc||P3.cut)return;const t=tileAt(F.px,F.py);if(!(F.map.enc||'').includes(t))return;F.stepsSince++;if(F.stepsSince<6)return;if(Math.random()>(F.map.encRate||.075))return;F.stepsSince=0;
-  const grp=p4Encounter(pick(ENC[F.map.encT]&&ENC[F.map.encT].length?ENC[F.map.encT]:ENC.lumi4));run(async()=>{const r=await doBattle({enemies:grp,bg:F.map.bg||'field'});await afterNormal(r,grp)})}}
+  const eT=F.map.id==='verde'?'forest4':F.map.encT;const grp=p4Encounter(pick(ENC[eT]&&ENC[eT].length?ENC[eT]:ENC.lumi4));run(async()=>{const r=await doBattle({enemies:grp,bg:F.map.bg||'field'});await afterNormal(r,grp)})}}
 /* 魔笛（魔王城で 手に入る。30%で ゴールドモンスター） */
 ITEMS.mateki={name:'魔笛',desc:'吹くと 魔物を 呼び寄せる。30%で ゴールドモンスターが 現れる',key:1};
 async function useMateki(){if(mode!=='field'||!(F.map.enc||F.map.world)){await say('','ここでは 吹いても 何も 起きない。');return}
@@ -5618,6 +5618,11 @@ Object.assign(ENC,{
 {const base=makeEnemyMesh;makeEnemyMesh=function(type){const d=EDEF[type];if(d&&d.tint&&d.goldOf&&!d.metal){const m=base(d.goldOf);const tc=new THREE.Color(d.tint);for(const mt of m.mats||[])if(mt.color)mt.color.lerp(tc,.55);return m}return base(type)}}
 /* 冒頭（霧の島）で ジルが 呼び出す 魔物：第三部の 終わりくらいの 強さ */
 Object.assign(EDEF,{o_wolf:Object.assign(E4('霧の魔狼','wolf',0,'#8a8aa8'),{hp:800,atk:110,def:30,exp:400,gold:120}),o_slime:Object.assign(E4('霧のスライム','cslime',0,'#a8b0c8'),{hp:650,atk:95,def:25,exp:300,gold:100})});
+/* ヴェルデの森：第一部と 同じ 顔ぶれ。経験値 多め（500〜700）の レベル上げ用。ゴールド系は 1/150 */
+(function(){const V=(id,base,hp,atk,def,exp)=>{const b=EDEF[base]||{};EDEF[id]=Object.assign({},b,{goldOf:base,p4:1,hp,atk,def,exp,gold:Math.round(exp/4)});delete EDEF[id].tint};
+  V('v_goblin','goblin',850,115,30,550);V('v_wolf','wolf',780,110,26,500);V('v_golem','golem',1200,125,45,700);V('v_bwolf','bwolf',900,120,30,650);V('v_rslime','rslime',800,112,28,600);V('v_slime','slime',650,95,22,500);
+  ENC.forest4=[['v_goblin'],['v_goblin','v_wolf'],['v_golem'],['v_bwolf','v_goblin'],['v_rslime','v_goblin'],['v_golem','v_slime'],['v_wolf','v_wolf','v_goblin'],['v_goblin','v_goblin']];
+  Object.defineProperty(MAPDEF.verde,'encT',{get:()=>isP4()?'forest4':undefined,configurable:true})})();
 
 /* ================= 第四部 ボス ================= */
 /* ---- 3Dモデル ---- */
