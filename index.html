@@ -5826,7 +5826,7 @@ const C4=(ex='通常')=>C_(ex);
   
   return base()}}
 /* ---- 目的 ---- */
-Object.assign(OBJ4,{100:'……',101:'バニカの 墓へ',102:'ノルヴェルト王都を 歩く／南の 門から リーヴェの村へ',103:'ジルの 母親を 訪ねよう（村の 左上の 家）',
+Object.assign(OBJ4,{100:'……',101:'バニカの 墓へ',102:'ノルヴェルト王都を 歩く／南の 門から リーヴェの村へ',103:()=>S.flags.p4mother?'アレスタ王国へ（村の 南から 出る）':'ジルの 母親を 訪ねよう（村の 左上の 家）',
   104:'広場の 怪我人を 助けよう（王都の 中央）',105:'王城へ 向かおう（王都の 北）',106:'王城から 脱出しよう（城の 南）',107:'……',108:'船を 探そう（港の 桟橋）',
   109:()=>S.flags.lumMorning?'白い神殿の 祭壇へ（島の 北の 神殿）':'ルミナス島を 調べよう。宿で 休むと 次の朝（町の 右上の 宿）',110:'神殿の 地下の 転移装置へ',111:'……'});
 /* ---- 第四部の 移動・イベント ---- */
@@ -5869,7 +5869,7 @@ NPC4.ntown=[
   {id:'n4f',spr:'youth',x:22,y:13,wander:1,talk:async()=>{await say('若者','南の 門から 船着き場へ 出られるよ。エルディア大陸へも 船が 出てる。');if(st4()===102)await say(C4(),'……リーヴェの村。ジルさんの 故郷へ 行ってみましょう。')}},
 ];
 NPC4.rieve=[
-  {id:'r4m',spr:'mother',x:4,y:4,talk:async()=>{if(!S.flags.p4mother){await p4Mother();return}await say('ジルの母','……あの子のこと、お願いね。')}},
+  {id:'r4m',spr:'mother',x:4,y:4,talk:async()=>{if(!S.flags.p4mother){await p4Mother();return}await say('ジルの母','……あの子のこと、お願いね。');if(st4()===103)await p4ToAlesta()}},
   {id:'r4a',spr:'man',x:9,y:9,wander:1,talk:async()=>{await say('村人','ジル？ いや、見てないなあ。');await say('村人','あいつ、勇者に なったんだろ？ たまには 顔を 見せりゃいいのに。')}},
   {id:'r4b',spr:'woman',x:17,y:8,wander:1,talk:T4N('村の女',['ジルくん？ 帰ってきてないわよ。','お母さん、あの子の 部屋を 毎日 掃除してるのよ。'])},
   {id:'r4c',spr:'elder',x:16,y:12,talk:T4N('長老',['ジルは 戻っておらん。……何か あったのかね。'])},
@@ -5934,7 +5934,7 @@ async function p4ToRieve(){await fadeTo(1,800);
   setStep(103);p4Open('rieve','seirun');loadMap('rieve',11,17,'up');F.time='day';updateHUD();saveGame();await fadeTo(0,800);
   await say('','エルディア大陸・リーヴェの村。\nかつて ジルが 暮らしていた 村。')}
 async function p4Mother(){S.flags.p4mother=1;
-  const L=SC4.L163;const i=L.findIndex(l=>l[0]==='ジルの母');await sc4('L163',{from:i});saveGame();updateHUD()}
+  const L=SC4.L163;const i=L.findIndex(l=>l[0]==='ジルの母');P3.cut=true;await sc4('L163',{from:Math.max(0,i)});P3.cut=false;await p4ToAlesta()}
 /* ================= 第四章「灰に沈む王都」 ================= */
 const FIRE4=[[3,4],[5,4],[22,4],[24,4],[3,15],[5,16],[22,15],[24,16],[9,8],[18,8],[8,13],[19,13],[2,10],[25,10],[11,18],[16,18]];
 function fxCityFire(){return fxAdd((g,cx,cy,p,now)=>{g.fillStyle=`rgba(150,30,10,${.3+.06*Math.sin(now/260)})`;g.fillRect(0,0,g.canvas.width,g.canvas.height);
