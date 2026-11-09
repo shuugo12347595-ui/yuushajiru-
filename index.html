@@ -1369,7 +1369,7 @@ async function openMenu(){
     if(k==='carry'){await showCarryCode();continue}
     if(k==='ori'){PREF_LAND=!PREF_LAND;try{localStorage.setItem('jil_land',PREF_LAND?'1':'0')}catch(e){}if(PREF_LAND)await tryLandscape();else{try{screen.orientation.unlock()}catch(e){}applyOrient()}await say('',PREF_LAND?'スマホでは 横画面で 表示します。':'端末の向きに 合わせて 表示します。')}
     if(k==='char'){if(partyList().length>1){const ks=partyList();const j=await selectList({title:'だれ？',items:ks.map(x=>({label:nameOf(x),sub:'Lv '+actorOf(x).lv})),pos:'left'});if(j<0)continue;if(ks[j]==='jil')await charMenu();else await girlMenu(ks[j])}else await charMenu()}
-    if(k==='item'){const its=Object.keys(ITEMS).filter(x=>P.items[x]>0);const list=its.map(x=>({k:x,label:ITEMS[x].name,sub:'×'+P.items[x]}));if(S.flags.ship)list.push({k:'ship',label:'船',sub:'だいじなもの'});if(S.flags.magicStone)list.push({k:'stone',label:'魔法石',sub:'だいじなもの'});
+    if(k==='item'){const its=Object.keys(ITEMS).filter(x=>P.items[x]>0);const list=its.map(x=>({k:x,label:ITEMS[x].name,sub:'×'+P.items[x]}));if(S.flags.ship&&!isP4())list.push({k:'ship',label:'船',sub:'だいじなもの'});if(S.flags.magicStone)list.push({k:'stone',label:'魔法石',sub:'だいじなもの'});
       if(!list.length){await say('','どうぐを なにも 持っていない。');continue}
       const j=await selectList({title:'どうぐ',items:list,pos:'left'});if(j<0)continue;const it=list[j].k;
       if(it==='ship'){await useShip();return}if(it==='mateki'){await useMateki();return}if(typeof P4ITEMUSE!=='undefined'&&P4ITEMUSE[it]){await P4ITEMUSE[it]();return}
@@ -5884,7 +5884,7 @@ STEP4.push((m,x,y,t,s)=>{
   return 0});
 /* ---- NPC ---- */
 const NPC4={};
-for(const id of['ntown','rieve','alesta','castle','lumtown','seirun','gardia','tiana','luminas','temple']){const base=NPCS[id]||[];NPCS[id]=new Proxy(base,{get(t,p){if(isP4()){const a=NPC4[id]||[];return a[p]}return t[p]}})}
+for(const id of['ntown','rieve','alesta','castle','lumtown','seirun','gardia','tiana','luminas','temple']){const base=NPCS[id]||[];NPCS[id]=new Proxy(base,{get(t,p){if(isP4()){const a=NPC4[id]||[];return a[p]}return t[p]},has(t,p){return isP4()?p in(NPC4[id]||[]):p in t}})}
 const T4N=(name,lines)=>async()=>{for(const l of lines)await say(name,l)};
 NPC4.ntown=[
   {id:'n4a',spr:'child',x:10,y:13,wander:1,talk:T4N('子ども',['ねえねえ！ もう 外で 遊んでも いいんだって！','お母さんの 熱も 下がったんだ！'])},
