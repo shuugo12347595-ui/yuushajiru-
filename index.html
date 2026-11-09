@@ -6435,6 +6435,50 @@ p4HerbText=function(){const A=ACT(),K=curK();const nm=id=>id&&SKILLS[id]?SKILLS[
   if(K==='kyle')$('#bhud .herb').textContent=`スキル：${nm(A.eqSkill)} ／ 魔法：${nm(A.eqSkill2)} ／ 魔法２：${nm(A.eqSkill3)}`;
   else{const m1=A.slots[0]?SPELLS[A.slots[0]].name:'－',m2=A.slots[1]?SPELLS[A.slots[1]].name:'－';$('#bhud .herb').textContent=`剣技 ${nm(A.eqSkill)} ／ 魔法１：${m1} ／ 魔法２：${m2}`}};
 
+/* ================= 第四部 究極スキル（SP100 → 受けた ダメージで 金色の バー → スキルボタンが 変化） ================= */
+Object.assign(SKILLS.k_tendan,{t:'ult15',hits:15,mult:8.0,desc:'15連撃（1撃×8.0・合計×120.0）。単体。MPを すべて使い、連撃が 終わるまで 完全無敵',sp:0});
+Object.assign(SKILLS.c_lumi,{sp:0,desc:SKILLS.c_lumi.desc+'。放つまで 無敵'});
+const ULT4={kyle:'k_tendan',celes:'c_lumi'};
+const UG_NEED=.5; /* 最大HPの 50%ぶんの ダメージを 受けると 一周 */
+function ult4Learned(k){const a=actorOf(k);return a&&a.skills4&&a.skills4.includes(ULT4[k])}
+function ug4(){const b=BS;b.ug4=b.ug4||{};return b.ug4}
+/* ダメージを 受けると バーが たまる・究極スキル中は 無敵 */
+{const base=takeDamage;takeDamage=function(dmg){const b=BS;if(isP4()&&b&&b.pl.ult4){popup(b.pl.pos,'無敵','g');return 0}const r=base(dmg);
+  if(isP4()&&b&&r>0){const k=curK();if(ULT4[k]&&ult4Learned(k)&&P.sp>=100){const u=ug4();const a=ACT();const was=u[k]||0;u[k]=Math.min(1,was+r/(a.mhp*UG_NEED));if(was<1&&u[k]>=1){banner('究極スキル 解放！ スキルボタンで 放て',1600);sfx('level');ringFx(b.pl.pos,'#ffd700',3,.5)}}}return r}}
+{const base=hurtPlayer;hurtPlayer=function(e){if(isP4()&&BS&&BS.pl.ult4){popup(BS.pl.pos,'無敵','g');return}return base(e)}}
+{const base=resolveEnemyHit;resolveEnemyHit=function(e){if(isP4()&&BS&&BS.pl.ult4){popup(BS.pl.pos,'無敵','g');return}return base(e)}}
+/* スキルボタン：バーが 一周したら 究極スキルに 変わる */
+{const base=startSkill;startSkill=function(){if(!isP4())return base();const k=curK(),pl=BS.pl,u=ug4();
+  if(ULT4[k]&&u[k]>=1&&P.sp>=100)return fireUlt4(k);
+  const sk=SKILLS[curEqSkill()];if(sk&&sk.ult){popup(pl.pos,'究極スキルは 金色の バーが 一周すると 使える','g');return}
+  return base()}}
+function fireUlt4(k){const b=BS,pl=b.pl,a=ACT(),id=ULT4[k],sk=SKILLS[id];if(a.mp<1){popup(pl.pos,'MP不足','g');return}
+  const u=ug4();u[k]=0;P.sp=0;a.mp=0;pl.ult4={k,id,t0:b.t,n:0,tg:nearestEnemy(pl.pos,30)};pl.state='skill';pl.skillId=id;pl.st=0;pl.hitDone=false;pl.hitN=0;pl.skillHit=new Set();
+  banner(sk.name,1800);sfx('skill');flash(260,'#fff4c0');ringFx(pl.pos,'#ffd700',4.5,.7);b.shake=.4;
+  if(k==='celes'){const ne=pl.ult4.tg;if(ne)pl.face=angTo(pl.pos,ne.pos)}}
+{const base=p4Tick;p4Tick=function(b,dt){base(b,dt);const pl=b.pl,U=pl.ult4;if(!U)return;
+  if(pl.state!=='skill'||pl.skillId!==U.id){if(U.k==='celes'&&b.t-U.t0>1.2){pl.ult4=null;return}if(U.k==='kyle'){pl.state='skill';pl.skillId=U.id}}
+  if(U.k==='celes'){if(b.t-U.t0>2.2){pl.ult4=null}return}
+  /* カイル：15連撃（単体・完全無敵） */
+  pl.st=Math.min(pl.st,.1);let tg=U.tg;if(!tg||tg.dead){tg=U.tg=nearestEnemy(pl.pos,30)}
+  if(!tg){pl.ult4=null;pl.state='idle';pl.st=0;return}
+  const T=b.t-U.t0;const at=.55+U.n*.09;
+  if(T<.55){if(Math.random()<.6)burst(pl.pos.clone().add(V3(0,1,0)),'#ffd700',2,2,.08);return}
+  if(U.n<15&&T>=at){const a=(U.n*2.399)%(Math.PI*2);pl.pos.set(tg.pos.x+Math.sin(a)*(1.3+tg.d.r),0,tg.pos.z+Math.cos(a)*(1.3+tg.d.r));pl.face=angTo(pl.pos,tg.pos);
+    slashFx(pl.pos,pl.face+(U.n%2?.6:-.6),U.n===14,U.n===14?'#ffffff':'#ffd700',U.n===14?2.4:1.3);sfx('slash');trailFx('#ffd700');
+    if(!tg.dead)damageEnemy(tg,8.0,'skill+');U.n++;b.hitstop=U.n===15?.25:.03;if(U.n===15){b.shake=.7;ringFx(tg.pos,'#ffffff',5,.6);burst(tg.pos.clone().add(V3(0,1,0)),'#fff4c0',40,10);sfx('boom')}}
+  if(U.n>=15&&T>at+.35){pl.ult4=null;pl.state='idle';pl.st=0}}}
+/* 金色の バー（スキルボタンの 周り）と 表示の 切り替え */
+(function(){const st=document.createElement('style');st.textContent=`#touch-battle .skl{position:absolute}#touch-battle .skl .ug4{position:absolute;inset:-6px;border-radius:50%;pointer-events:none;background:conic-gradient(#ffd700 calc(var(--ug,0)*1turn),rgba(255,215,0,.15) 0);-webkit-mask:radial-gradient(circle,transparent 58%,#000 60%);mask:radial-gradient(circle,transparent 58%,#000 60%);opacity:0;transition:opacity .3s}
+  #touch-battle .skl.ug4on .ug4{opacity:1}#touch-battle .skl.ult4{background:radial-gradient(#fff4c0,#d4a017)!important;color:#3a2600!important;box-shadow:0 0 14px #ffd700;font-weight:bold;font-size:11px}`;document.head.appendChild(st)})();
+function ult4Hud(){const btn=document.querySelector('#touch-battle .skl');if(!btn)return;let r=btn.querySelector('.ug4');if(!r){r=document.createElement('div');r.className='ug4';btn.appendChild(r)}
+  const b=BS;if(!b||!isP4()){btn.classList.remove('ug4on','ult4');return}const k=curK(),u=ug4()[k]||0;const on=ULT4[k]&&ult4Learned(k)&&P.sp>=100;
+  btn.classList.toggle('ug4on',!!on);btn.style.setProperty('--ug',u);const ready=on&&u>=1;btn.classList.toggle('ult4',!!ready);
+  const lab=ready?SKILLS[ULT4[k]].name.replace(/^.*・/,''):'スキル';if(btn.firstChild&&btn.firstChild.nodeType===3){if(btn.firstChild.nodeValue!==lab)btn.firstChild.nodeValue=lab}}
+{const base=p4Tick;p4Tick=function(b,dt){base(b,dt);ult4Hud()}}
+{const base=p4HerbText;p4HerbText=function(){base();const k=curK();if(ULT4[k]&&ult4Learned(k)){const u=ug4()[k]||0;$('#bhud .herb').textContent+=P.sp<100?'　／ 究極：SP100で バー出現':u>=1?'　／ 究極スキル 発動可能！（スキル）':`　／ 究極バー ${Math.floor(u*100)}%`}}}
+{const base=endBattle;endBattle=async function(r){const btn=document.querySelector('#touch-battle .skl');if(btn){btn.classList.remove('ug4on','ult4');if(btn.firstChild&&btn.firstChild.nodeType===3)btn.firstChild.nodeValue='スキル'}if(BS&&BS.pl)BS.pl.ult4=null;return base(r)}}
+
 /* ================= TITLE / BOOT ================= */
 async function titleScreen(){
   if(DISK===2)return titleScreen3();
