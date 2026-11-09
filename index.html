@@ -5083,26 +5083,32 @@ const p4Curve=lv=>Math.pow((lv+12)/112,1.7);
 const expNext4=lv=>3*lv*lv;
 /* 装備（メモの数値） */
 const GEAR4={
-  kat0:{name:'無銘の刀',slot:'wpn',who:'kyle',atk:60},
-  kikou:{name:'機鋼剣',slot:'wpn',who:'kyle',atk:105,desc:'古代工業施設の 機兵が 守っていた 剣（攻撃力+45）'},
-  mutsu:{name:'陸奥守吉行',slot:'wpn',who:'kyle',atk:380,crit:.12,critD:.25,desc:'攻撃力+320／会心率+12%／会心ダメージ+25%／攻撃速度+8%。HP30%以下で 攻撃力15%上昇（不屈の一閃）'},
-  csw0:{name:'旅人の剣',slot:'wpn',who:'celes',atk:40},
+  kat0:{name:'無銘の刀',slot:'wpn',who:'kyle',atk:30},
+  kikou:{name:'機鋼剣',slot:'wpn',who:'kyle',atk:75,desc:'古代工業施設の 機兵が 守っていた 剣（攻撃力+45）'},
+  mutsu:{name:'陸奥守吉行',slot:'wpn',who:'kyle',atk:350,crit:.12,critD:.25,desc:'攻撃力+320／会心率+12%／会心ダメージ+25%／攻撃速度+8%。HP30%以下で 攻撃力15%上昇（不屈の一閃）'},
+  csw0:{name:'旅人の剣',slot:'wpn',who:'celes',atk:10},
   hsword:{name:'浄化された勇者の剣',slot:'wpn',who:'celes',atk:240,matk:160,desc:'白魔法で 浄化された 勇者の剣'},
   lsword:{name:'光の剣',slot:'wpn',who:'celes',atk:420,matk:420,desc:'原罪イブを 倒して 手に入れた 光の剣。セレスの 最強武器'},
-  staff0:{name:'白樺の杖',slot:'focus',who:'celes',matk:40},
-  sstaff:{name:'星晶の杖',slot:'focus',who:'celes',matk:75,desc:'魔法攻撃力+35'},
-  robe0:{name:'旅の法衣',slot:'arm',who:'celes',def:60},
+  staff0:{name:'白樺の杖',slot:'focus',who:'celes',matk:15},
+  sstaff:{name:'星晶の杖',slot:'focus',who:'celes',matk:50,desc:'魔法攻撃力+35'},
+  robe0:{name:'旅の法衣',slot:'arm',who:'celes',def:10},
   seisei:{name:'星聖の法衣',slot:'arm',who:'celes',def:450,hp:2500,mpR:.25,mcut:.2,desc:'防御+450 HP+2500 MP+25% 魔法ダメージ20%軽減。HP30%以下で一度だけHP40%回復（星の加護）'},
-  coat0:{name:'黒い外套',slot:'arm',who:'kyle',def:90},
+  coat0:{name:'黒い外套',slot:'arm',who:'kyle',def:15},
   kokkou:{name:'黒鋼の戦衣',slot:'arm',who:'kyle',def:650,hp:4000,pcut:.15,desc:'防御+650 HP+4000 物理ダメージ15%軽減。HP50%以下で被ダメージをさらに15%軽減（不退転）'},
   taine:{name:'耐熱の腕輪',slot:'acc',who:'all',el:'fire',cut:.15,desc:'火属性ダメージを15%軽減'},
   kokuyo:{name:'黒曜の護符',slot:'acc',who:'all',el:'dark',cut:.2,desc:'闇属性ダメージを20%軽減'},
   hyoka:{name:'氷華の首飾り',slot:'acc',who:'all',el:'ice',cut:.2,desc:'氷属性ダメージを20%軽減'},
 };
 function p4Gear(a){a.gear=a.gear||{};return a.gear}
-function p4Recalc(a){const B=P4STAT[a.key];if(!B)return;const c=p4Curve(a.lv),g=p4Gear(a);const G=k=>Object.values(g).reduce((s,id)=>s+((GEAR4[id]||{})[k]||0),0);
+/* 第四部に 入った ときの 強さ（第三部の 続き）から、Lv100で メモの 値に 届くように 伸びる */
+function p4Base0(a){if(a.base0)return a.base0;const k=a.key,lv=a.lv||1;
+  if(k==='celes')a.base0={lv,mhp:a.mhp||300,mmp:a.mmp||200,atk:Math.round(batkFor(lv)*.6),matk:Math.round(girlBase(Object.assign({},a,{key:'celes'}))/.7),def:a.def||40,mdef:a.def||40};
+  else a.base0={lv,mhp:P.mhp||390,mmp:120,atk:P.batk||150,matk:60,def:(typeof defOf==='function'?defOf():P.bdef)||50,mdef:P.bdef||40};
+  return a.base0}
+function p4F(a){const b=a.base0;if(!b||b.lv>=100)return 1;return Math.pow(Math.max(0,Math.min(1,(a.lv-b.lv)/(100-b.lv))),1.5)}
+function p4Recalc(a){const B=P4STAT[a.key];if(!B)return;const b0=p4Base0(a),c=p4F(a),g=p4Gear(a);const L=k=>Math.round(b0[k]+(B[k]-b0[k])*c);const G=k=>Object.values(g).reduce((s,id)=>s+((GEAR4[id]||{})[k]||0),0);
   const hpR=a.mhp?a.hp/a.mhp:1,mpR=a.mmp?a.mp/a.mmp:1;
-  a.mhp=Math.round(B.mhp*c)+G('hp');a.mmp=Math.round(B.mmp*c*(1+G('mpR')));a.atk=Math.round(B.atk*c)+G('atk');a.matk=Math.round(B.matk*c)+G('matk');a.def=Math.round(B.def*c)+G('def');a.mdef=Math.round(B.mdef*c)+Math.round(G('def')*.6);
+  a.mhp=L('mhp')+G('hp');a.mmp=Math.round(L('mmp')*(1+G('mpR')));a.atk=L('atk')+G('atk');a.matk=L('matk')+G('matk');a.def=L('def')+G('def');a.mdef=L('mdef')+Math.round(G('def')*.6);
   a.hp=Math.max(1,Math.round(a.mhp*hpR));a.mp=Math.round(a.mmp*mpR)}
 function p4Give(id,silent){const d=GEAR4[id];S.flags.gear4=S.flags.gear4||{};S.flags.gear4[id]=1;
   const ks=d.who==='all'?['celes','kyle']:[d.who];
@@ -5116,7 +5122,7 @@ MEMBERS.kyle={name:'カイル',model:()=>makeKyle(),hpR:1,defR:1,mpB:30,hpG:9,mp
 {const base=updateHUD;updateHUD=function(){base();if(isP4()&&$('#stat'))$('#stat').innerHTML=partyList().map(k=>{const a=actorOf(k);return `${a.name} Lv ${a.lv}　HP ${a.hp}/${a.mhp}`}).join('<br>')+`<br><span class="g">${P.gold} G</span>`}}
 function p4Join(k,lv){P.party=P.party||{};const old=P.party[k];
   const a=old||{key:k,name:MEMBERS[k].name,lv,exp:0,hp:1,mhp:1,mp:1,mmp:1,def:1,pts:0,magics:[],slots:[null,null,null],sel:0};
-  a.joined=1;a.lv=Math.max(a.lv||1,lv);a.key=k;a.name=MEMBERS[k].name;
+  a.joined=1;a.lv=Math.max(a.lv||1,lv);a.key=k;a.name=MEMBERS[k].name;p4Base0(a);
   if(k==='kyle'){p4Gear(a);a.gear.wpn=a.gear.wpn||'kat0';a.gear.arm=a.gear.arm||'coat0';a.eqSkill=a.eqSkill||'k_iai';a.eqSkill2=a.eqSkill2||'k_tsuki'}
   if(k==='celes'){p4Gear(a);a.gear.wpn=a.gear.wpn||'csw0';a.gear.focus=a.gear.focus||'staff0';a.gear.arm=a.gear.arm||'robe0';a.eqSkill=a.eqSkill||'c_slash';
     a.magics=a.magics||[];for(const id of['healL','hshot','protection','hheal','sray','aheal'])if(!a.magics.includes(id)&&SPELLS[id].lv<=a.lv)a.magics.push(id);a.slots=a.slots||[null,null,null];if(!a.slots[0])a.slots[0]='hheal';if(!a.slots[1])a.slots[1]='sray'}
