@@ -2795,7 +2795,7 @@ async function winSeq(){
   await endBattle('win');
 }
 async function loseSeq(){
-  await sleep(300);sfx('die');stopMusic();banner(BS&&BS.party&&BS.party.length>1?'全滅してしまった……':'ジルは たおれた……',2000);await sleep(2000);await endBattle('lose');
+  await sleep(300);sfx('die');stopMusic();banner(BS&&BS.party&&BS.party.length>1?'全滅してしまった……':(isP4()?(nameOf?nameOf(BS.party[0].k):'セレス'):'ジル')+'は たおれた……',2000);await sleep(2000);await endBattle('lose');
 }
 async function swordsmanEnd(){
   const b=BS;const e=b.enemies[0];hideTele(e);
@@ -5280,7 +5280,7 @@ Object.assign(EDEF,{
   zombie:{name:'屍兵',goldOf:'infected',zombie:1,hp:2400,atk:620,def:140,exp:0,gold:0,r:.5,speed:2.4,start:2.4,wind:.55,act:.3,rec:.6,kind:'swing',reach:1.7,cd:[.8,1.6],p4:1},
 });
 {const base=makeEnemyMesh;makeEnemyMesh=function(type){const d=EDEF[type];if(d&&d.goldOf){const m=base(d.goldOf);
-    for(const mt of m.mats||[]){if(!mt.color)continue;if(d.zombie){mt.color.lerp(new THREE.Color('#4a5a3a'),.5)}else{mt.color.set('#e8b830');if(mt.emissive)mt.emissive.set('#4a3000')}}return m}
+    for(const mt of m.mats||[]){if(!mt.color)continue;if(d.zombie){mt.color.lerp(new THREE.Color('#4a5a3a'),.5)}else if(d.metal){mt.color.set('#e8b830');if(mt.emissive)mt.emissive.set('#4a3000')}}return m}
   if(P4MESH[type])return P4MESH[type]();return base(type)}}
 const P4MESH={};
 function p4Encounter(grp){if(isP4()&&!F.map.noGold&&Math.random()<1/150)return[pick(['gslime','ggoblin','ggolem'])];return grp}
