@@ -2536,7 +2536,7 @@ function updateProj(dt){
       b.sc.remove(p.m);b.proj.splice(i,1)}}
 }
 function useHerb(){const b=BS,pl=b.pl;if(b.tut){const A=ACT();if(!(P.items.herb>0)){popup(pl.pos,'やくそうがない','g');return}P.items.herb--;pl.state='item';pl.st=0;const h=Math.min(ITEMS.herb.heal,A.mhp-A.hp);A.hp+=h;sfx('heal');popup(pl.pos,'+'+h,'h');return}
-  const its=Object.keys(ITEMS).filter(k=>P.items[k]>0&&!ITEMS[k].key);if(!its.length){popup(pl.pos,'どうぐがない','g');return}
+  const its=Object.keys(ITEMS).filter(k=>P.items[k]>0&&!ITEMS[k].key&&!ITEMS[k].field);if(!its.length){popup(pl.pos,'どうぐがない','g');return}
   run(async()=>{b.paused=true;const i=await selectList({title:'どうぐ',items:its.map(k=>({label:ITEMS[k].name,sub:'×'+P.items[k]})),pos:'center'});
     let k=null,tk=curK();if(i>=0){k=its[i];const d=ITEMS[k];if(d.revive){const ds=(b.party||[]).filter(p=>p.a.hp<=0);if(!ds.length){b.paused=false;popup(pl.pos,'倒れた仲間が いない','g');return}const j=ds.length>1?await selectList({title:d.name+'：だれに？',items:ds.map(p=>({label:nameOf(p.k),sub:'たおれている'})),pos:'center'}):0;tk=j<0?null:ds[j].k}else if(d.pan){tk=curK()}else if(b.party&&b.party.filter(p=>p.a.hp>0).length>1){const ps=b.party.filter(p=>p.a.hp>0);const j=await selectList({title:d.name+'：だれに？',items:ps.map(p=>({label:nameOf(p.k),sub:d.mp?`MP ${p.a.mp}/${p.a.mmp}`:`HP ${Math.ceil(p.a.hp)}/${p.a.mhp}`})),pos:'center'});tk=j<0?null:ps[j].k}}
     b.paused=false;if(!k||!tk||!BS||BS!==b||b.ended)return;const d=ITEMS[k],A=actorOf(tk);
@@ -5078,7 +5078,7 @@ const FACES4={'カイル':{通常:0,驚き:1,怒り:2,苦悩:3,微笑み:4,決�
   f.style.backgroundImage='';f.style.backgroundSize='';return base(name)}}
 
 /* ---- 能力値（メモ：セレス Lv100 HP8500 MP3200 物攻650 魔攻2100 防550 魔防1250） ---- */
-const P4STAT={celes:{mhp:8500,mmp:3200,atk:650,matk:2100,def:550,mdef:1250},kyle:{mhp:10500,mmp:1400,atk:1000,matk:380,def:750,mdef:650}};
+const P4STAT={celes:{mhp:8500,mmp:999,atk:650,matk:2100,def:550,mdef:1250},kyle:{mhp:9999,mmp:600,atk:1000,matk:380,def:750,mdef:650}};
 const p4Curve=lv=>Math.pow((lv+12)/112,1.7);
 const expNext4=lv=>3*lv*lv;
 /* 装備（メモの数値） */
@@ -5109,7 +5109,9 @@ function p4F(a){const b=a.base0;if(!b||b.lv>=100)return 1;return Math.pow(Math.m
 function p4Recalc(a){const B=P4STAT[a.key];if(!B)return;const b0=p4Base0(a),c=p4F(a),g=p4Gear(a);const L=k=>Math.round(b0[k]+(B[k]-b0[k])*c);const G=k=>Object.values(g).reduce((s,id)=>s+((GEAR4[id]||{})[k]||0),0);
   const hpR=a.mhp?a.hp/a.mhp:1,mpR=a.mmp?a.mp/a.mmp:1;
   a.mhp=L('mhp')+G('hp');a.mmp=Math.round(L('mmp')*(1+G('mpR')));a.atk=L('atk')+G('atk');a.matk=L('matk')+G('matk');a.def=L('def')+G('def');a.mdef=L('mdef')+Math.round(G('def')*.6);
-  a.hp=Math.max(1,Math.round(a.mhp*hpR));a.mp=Math.round(a.mmp*mpR)}
+  p4Cap(a);a.hp=Math.max(1,Math.round(a.mhp*hpR));a.mp=Math.round(a.mmp*mpR)}
+/* 上限：HP9999・MP999（ユーザー指定） */
+function p4Cap(a){a.mhp=Math.min(9999,a.mhp);a.mmp=Math.min(999,a.mmp);a.hp=Math.min(a.hp,a.mhp);a.mp=Math.min(a.mp,a.mmp)}
 function p4Give(id,silent){const d=GEAR4[id];S.flags.gear4=S.flags.gear4||{};S.flags.gear4[id]=1;
   const ks=d.who==='all'?['celes','kyle']:[d.who];
   for(const k of ks){const a=P.party&&P.party[k];if(!a)continue;const g=p4Gear(a);const cur=GEAR4[g[d.slot]];
@@ -5223,9 +5225,9 @@ async function p4CharMenu(k){const a=actorOf(k);
     else if(lab.startsWith('装飾')){const own=Object.keys(S.flags.gear4||{}).filter(id=>GEAR4[id].slot==='acc');if(!own.length){await say('','装飾品を 持っていない。');continue}
       const s=await selectList({title:'装飾品',items:[...own.map(id=>({label:(g.acc===id?'▶':'')+GEAR4[id].name,sub:GEAR4[id].desc})),{label:'はずす'}]});if(s>=0){const o=partyList().find(x=>x!==k&&p4Gear(actorOf(x)).acc===own[s]);if(o)p4Gear(actorOf(o)).acc=null;g.acc=own[s]||null;p4Recalc(a);sfx('ok')}}}}
 /* 第四部の 魔法は 消費MPも 大きい */
-const p4Mp=sp=>sp.allMp?'全部':isP4()?sp.mp*6:sp.mp;
+const p4Mp=sp=>sp.allMp?'全部':isP4()?sp.mp*2:sp.mp;
 {const base=startCastGirl;startCastGirl=function(id,k){if(isP4()){const sp=SPELLS[id];if(sp&&!sp._p4){sp._mp0=sp.mp;sp._p4=1}}return base(id,k)}}
-function p4ScaleMp(on){for(const id in SPELLS){const sp=SPELLS[id];if(sp.allMp)continue;if(sp._mp0==null)sp._mp0=sp.mp;sp.mp=on?sp._mp0*6:sp._mp0}}
+function p4ScaleMp(on){for(const id in SPELLS){const sp=SPELLS[id];if(sp.allMp)continue;if(sp._mp0==null)sp._mp0=sp.mp;sp.mp=on?sp._mp0*2:sp._mp0}}
 {const base=startBattle;startBattle=function(cfg){p4ScaleMp(isP4());if(isP4())document.body.classList.add('p4');return base(cfg)}}
 
 {const base=gameOver;gameOver=async function(){if(!isP4())return base();
@@ -6326,6 +6328,26 @@ async function p4Eve(){P3.cut=true;F.moving=false;
   if(r.result==='lose'){P3.cut=false;await gameOver();return}
   S.flags.eveDone=1;await say('原罪イブ','……人は……罪を 抱えたまま……それでも……');await say('','原罪イブは 光の 粒に なって 消えていった。\nその 場所に、一振りの 剣が 残されている。');
   p4Give('lsword');sfx('level');await say('','セレス専用の 最強武器「光の剣」を 手に入れた！\n（浄化された勇者の剣より 強い）');saveGame();P3.cut=false;updateHUD()}
+
+/* ================= 第四部 ステータスを 上げる 種・木の実（ダンジョンの 宝箱） ================= */
+const SEED4={atk:['力の種','攻撃力'],matk:['魔力の種','魔法攻撃力'],def:['守りの種','防御力'],mhp:['命の木の実','最大HP'],mmp:['不思議な木の実','最大MP']};
+for(const k in SEED4)ITEMS['seed_'+k]={name:SEED4[k][0],desc:`食べると ${SEED4[k][1]}が ずっと 上がる`,field:1};
+const seedAmt=(a,k)=>Math.max(1,Math.round((P4STAT[a.key]||P4STAT.celes)[k]*.015));
+{const base=p4Recalc;p4Recalc=function(a){base(a);const b=a.seed;if(!b)return;const hpR=a.hp/a.mhp,mpR=a.mp/a.mmp;for(const k in b)a[k]+=b[k];p4Cap(a);a.hp=Math.round(a.mhp*hpR);a.mp=Math.round(a.mmp*mpR)}}
+for(const k in SEED4)P4ITEMUSE['seed_'+k]=async()=>{const ks=partyList();let t=ks[0];if(ks.length>1){const j=await selectList({title:`だれに 食べさせる？（${SEED4[k][0]}）`,items:ks.map(x=>({label:actorOf(x).name,sub:`${SEED4[k][1]} +${seedAmt(actorOf(x),k)}`}))});if(j<0)return;t=ks[j]}
+  const a=actorOf(t);const n=seedAmt(a,k);a.seed=a.seed||{};a.seed[k]=(a.seed[k]||0)+n;P.items['seed_'+k]--;p4Recalc(a);sfx('level');await say('',`${a.name}は ${SEED4[k][0]}を 食べた！\n${SEED4[k][1]}が ${n} 上がった！`);updateHUD()};
+/* 宝箱の 場所：行き止まりや 部屋の すみ（入口から 行ける 場所だけ） */
+const SEEDMAPS={fac2:[[2,19],3],fac3:[[14,21],2],fac4:[[15,21],2],maouryo:[[3,29],3],mc2:[[2,32],4],shr1:[[14,19],2],shr2:[[12,17],1],icec1:[[15,21],2],elvin:[[16,25],2],elem1:[[20,28],3],elem2:[[17,25],2],elem3:[[15,21],2],elem5:[[15,21],2],tdeep:[[10,15],1]};
+(function(){const kinds=['atk','mhp','matk','def','mmp'];let n=0;MAPMETA.seeds={};
+  for(const id in SEEDMAPS){const[[sx,sy],cnt]=SEEDMAPS[id];const rows=BASE[id].map(r=>[...r]);const pass=c=>!SOLID.has(c)||'扉関封凍熱'.includes(c);
+    const seen=reach4(rows,sx,sy,pass);const H=rows.length,W=rows[0].length;const floorC=rows[sy][sx];const cand=[];
+    for(const k of seen){const[x,y]=k.split(',').map(Number);const c=rows[y][x];if(SOLID.has(c)||'<>昇c^+光線熱凍'.includes(c))continue;let walls=0;for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){const t=rows[y+dy]&&rows[y+dy][x+dx];if(t==null||SOLID.has(t))walls++}
+      if(walls>=2&&Math.abs(x-sx)+Math.abs(y-sy)>8)cand.push([x,y,walls])}
+    cand.sort((a,b)=>b[2]-a[2]||((a[0]*31+a[1]*17)%23)-((b[0]*31+b[1]*17)%23));const pick=[];
+    for(const c of cand){if(pick.length>=cnt)break;if(pick.every(p=>Math.abs(p[0]-c[0])+Math.abs(p[1]-c[1])>10))pick.push(c)}
+    MAPMETA.seeds[id]=[];for(const[x,y]of pick){rows[y][x]='c';const kind=kinds[n++%kinds.length];MAPMETA.seeds[id].push([x,y,kind]);
+      CHESTS[id+':'+x+','+y]={fn:async key=>{S.opened[key]=1;sfx('chest');P.items['seed_'+kind]=(P.items['seed_'+kind]||0)+1;await say('',`宝箱の 中に ${SEED4[kind][0]}が 入っていた！\n（どうぐ から 食べると ${SEED4[kind][1]}が 上がる）`);updateHUD()}}}
+    BASE[id]=rows.map(r=>r.join(''))}})();
 
 /* ================= TITLE / BOOT ================= */
 async function titleScreen(){
