@@ -5865,7 +5865,7 @@ const C4=(ex='通常')=>C_(ex);
 /* ---- 目的 ---- */
 Object.assign(OBJ4,{100:'……',101:'バニカの 墓へ',102:'ノルヴェルト王都を 歩く／南の 門から リーヴェの村へ',103:()=>S.flags.p4mother?'アレスタ王国へ（村を 出て 東へ）':'ジルの 母親を 訪ねよう（村の 左上の 家）',
   104:'広場の 怪我人を 助けよう（王都の 中央）',105:'王城へ 向かおう（王都の 北）',106:'王城から 脱出しよう（城の 南）',107:'……',108:'船を 探そう（港の 桟橋）',
-  109:()=>S.flags.lumMorning?'白い神殿の 祭壇へ（島の 北の 神殿）':'ルミナス島を 調べよう。宿で 休むと 次の朝（町の 右上の 宿）',110:'神殿の 地下の 転移装置へ',111:'……'});
+  109:()=>S.flags.lumMorning?'白い神殿の 祭壇へ（島の 北の 神殿）':'ルミナス島を 調べよう。宿で 休むと 次の朝（左上の 宿屋）',110:'神殿の 地下の 転移装置へ',111:'……'});
 /* ---- 第四部の 移動・イベント ---- */
 {const base=p3OnStep;p3OnStep=function(m,x,y){if(!isP4())return base(m,x,y);if(P3.cut)return true;const t=tileAt(x,y),s=st4();
   for(const h of STEP4){const r=h(m,x,y,t,s);if(r)return true}
@@ -5914,10 +5914,10 @@ NPC4.rieve=[
 NPC4.alesta=[];NPC4.castle=[];NPC4.temple=[];NPC4.luminas=[];
 NPC4.lumtown=[
   {id:'l4a',spr:'man',x:13,y:12,wander:1,talk:T4N('町の人',['星の島 ルミナスへ ようこそ。','北の 白い神殿には 古代の 装置が 眠っているそうだ。'])},
-  {id:'l4inn',spr:'woman',x:23,y:4,talk:async()=>{await say('宿の主人','いらっしゃい。泊まっていくかい？（無料）');const j=await selectList({items:[{label:'泊まる'},{label:'やめる'}]});if(j!==0)return;
+  {id:'l4inn',spr:'woman',x:4,y:4,talk:async()=>{await say('宿の主人','いらっしゃい。泊まっていくかい？（無料）');const j=await selectList({items:[{label:'泊まる'},{label:'やめる'}]});if(j!==0)return;
     await fadeTo(1,600);healParty();if(st4()===109&&!S.flags.lumMorning){S.flags.lumMorning=1;await say('','――翌朝。')}updateHUD();saveGame();await fadeTo(0,600);if(st4()===109&&S.flags.lumMorning===1){S.flags.lumMorning=2;await sc4('L693');updateHUD()}}},
   {id:'l4b',spr:'scholar',x:5,y:12,talk:async()=>{await say('学者','魔力装置の 研究かね？ 神殿の 地下には 転移装置が あった。今は 誰も 近づかんがね。')}},
-  {id:'l4c',spr:'smith',x:4,y:4,talk:async()=>{await say('道具屋','いらっしゃい！');await p4Shop()}},
+  {id:'l4c',spr:'merchant',x:23,y:4,talk:async()=>{await say('道具屋','いらっしゃい！');await p4Shop()}},
 ];
 NPC4.seirun=[
   {id:'s4cap',spr:'man',x:10,y:5,dir:'down',talk:async()=>{if(st4()===108){await p4Sail();return}await p4Travel(false)}},
