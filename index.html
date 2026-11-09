@@ -5127,7 +5127,7 @@ function p4Join(k,lv){P.party=P.party||{};const old=P.party[k];
   a.joined=1;a.lv=Math.max(a.lv||1,lv);a.key=k;a.name=MEMBERS[k].name;p4Base0(a);
   if(k==='kyle'){p4Gear(a);a.gear.wpn=a.gear.wpn||'kat0';a.gear.arm=a.gear.arm||'coat0';a.eqSkill=a.eqSkill||'k_iai';a.eqSkill2=a.eqSkill2||'k_tsuki'}
   if(k==='celes'){p4Gear(a);a.gear.wpn=a.gear.wpn||'csw0';a.gear.focus=a.gear.focus||'staff0';a.gear.arm=a.gear.arm||'robe0';a.eqSkill=a.eqSkill||'c_slash';
-    a.magics=a.magics||[];for(const id of['healL','hshot','protection','hheal','sray','aheal'])if(!a.magics.includes(id)&&SPELLS[id].lv<=a.lv)a.magics.push(id);a.slots=a.slots||[null,null,null];if(!a.slots[0])a.slots[0]='hheal';if(!a.slots[1])a.slots[1]='sray'}
+    a.magics=a.magics&&a.magics.length?a.magics:['healL','hshot'];a.slots=a.slots||[null,null,null];if(!a.slots[0])a.slots[0]=a.magics[0];if(!a.slots[1])a.slots[1]=a.magics[1]||null}
   P.party[k]=a;p4Recalc(a);a.hp=a.mhp;a.mp=a.mmp;p4AutoSkills(a);document.body.classList.add('has-party');updateHUD();return a}
 /* 第四部の はじまり（セレス一人旅） */
 function p4Begin(){S.flags.p4=1;S.leader='celes';S.hideParty=0;P3.hideJil=false;document.body.classList.add('p4');
@@ -5146,25 +5146,24 @@ function comboMul(c){return(COMBO4[curK()]||COMBO4.jil)[c]}
 function counterMul(){return CNT4[curK()]||COUNTER_MULT}
 /* 剣技（カイル・セレス） */
 Object.assign(SKILLS,{
-  k_iai:{name:'居合一閃',sp:14,lv:1,t:'single',mult:1.9,wind:.22,who:'kyle',desc:'抜刀の 一閃（×1.90）'},
-  k_tsuki:{name:'刺突',sp:12,lv:1,t:'thrust',mult:1.7,ign:.3,who:'kyle',desc:'鋭い 突き（×1.70）。守備力を 30%無視'},
-  k_ren:{name:'三段斬り',sp:20,lv:55,t:'multi',mult:2.4,hits:3,gap:.12,who:'kyle',desc:'すばやい 3連撃（合計×2.40）'},
-  k_jin:{name:'飛刃',sp:16,lv:58,t:'wave',mult:1.8,pierce:1,who:'kyle',desc:'斬撃を 飛ばす（×1.80）'},
-  k_kaze:{name:'旋風',sp:24,lv:62,t:'spin',mult:2.1,who:'kyle',desc:'周りを まとめて 斬る（×2.10）'},
-  k_kage:{name:'影踏み',sp:20,lv:66,t:'rush',mult:2.0,who:'kyle',desc:'一瞬で 間合いを 詰める（×2.00）'},
-  k_tsubame:{name:'燕返し',sp:26,lv:72,t:'tsubame',mult:2.6,who:'kyle',desc:'斬って すぐ 退く（×2.60）'},
-  k_getsu:{name:'月影',sp:34,lv:78,t:'slash',mult:3.1,arc:1.9,range:3.8,dur:.45,hitAt:.16,big:1,who:'kyle',desc:'前方を 大きく 薙ぐ（×3.10）'},
-  k_shin:{name:'神速八連',sp:48,lv:86,t:'multi',mult:4.6,hits:8,gap:.07,who:'kyle',desc:'目にも 止まらぬ 8連撃（合計×4.60）'},
-  k_ura:{name:'裏一閃',sp:56,lv:94,t:'single',mult:5.2,wind:.4,who:'kyle',desc:'全てを 込めた 一閃（×5.20）'},
-  c_slash:{name:'白刃',sp:10,lv:1,t:'slash',mult:1.1,arc:1.1,range:2.6,dur:.32,hitAt:.1,who:'celes',desc:'基本の 斬撃（×1.10）'},
-  c_holy:{name:'聖光斬',sp:16,lv:56,t:'wave',mult:1.4,who:'celes',desc:'光を まとった 斬撃を 飛ばす（×1.40）'},
-  c_ring:{name:'光輪',sp:22,lv:68,t:'spin',mult:1.6,who:'celes',desc:'回転して 周りを 斬る（×1.60）'},
-  c_judge:{name:'断罪の剣',sp:32,lv:84,t:'single',mult:2.6,wind:.35,who:'celes',desc:'聖なる 一閃（×2.60）'},
+  k_iai:{name:'居合一閃',sp:14,pt:0,lv:1,t:'single',mult:1.9,wind:.22,who:'kyle',desc:'抜刀の 一閃（×1.90）'},
+  k_tsuki:{name:'刺突',sp:12,pt:0,lv:1,t:'thrust',mult:1.7,ign:.3,who:'kyle',desc:'鋭い 突き（×1.70）。守備力を 30%無視'},
+  k_ren:{name:'三段斬り',sp:20,pt:4,lv:55,t:'multi',mult:2.4,hits:3,gap:.12,who:'kyle',desc:'すばやい 3連撃（合計×2.40）'},
+  k_jin:{name:'飛刃',sp:16,pt:4,lv:58,t:'wave',mult:1.8,pierce:1,who:'kyle',desc:'斬撃を 飛ばす（×1.80）'},
+  k_kaze:{name:'旋風',sp:24,pt:5,lv:62,t:'spin',mult:2.1,who:'kyle',desc:'周りを まとめて 斬る（×2.10）'},
+  k_kage:{name:'影踏み',sp:20,pt:5,lv:66,t:'rush',mult:2.0,who:'kyle',desc:'一瞬で 間合いを 詰める（×2.00）'},
+  k_tsubame:{name:'燕返し',sp:26,pt:6,lv:72,t:'tsubame',mult:2.6,who:'kyle',desc:'斬って すぐ 退く（×2.60）'},
+  k_getsu:{name:'月影',sp:34,pt:8,lv:78,t:'slash',mult:3.1,arc:1.9,range:3.8,dur:.45,hitAt:.16,big:1,who:'kyle',desc:'前方を 大きく 薙ぐ（×3.10）'},
+  k_shin:{name:'神速八連',sp:48,pt:10,lv:86,t:'multi',mult:4.6,hits:8,gap:.07,who:'kyle',desc:'目にも 止まらぬ 8連撃（合計×4.60）'},
+  k_ura:{name:'裏一閃',sp:56,pt:12,lv:94,t:'single',mult:5.2,wind:.4,who:'kyle',desc:'全てを 込めた 一閃（×5.20）'},
+  c_slash:{name:'白刃',sp:10,pt:0,lv:1,t:'slash',mult:1.1,arc:1.1,range:2.6,dur:.32,hitAt:.1,who:'celes',desc:'基本の 斬撃（×1.10）'},
+  c_holy:{name:'聖光斬',sp:16,pt:4,lv:56,t:'wave',mult:1.4,who:'celes',desc:'光を まとった 斬撃を 飛ばす（×1.40）'},
+  c_ring:{name:'光輪',sp:22,pt:6,lv:68,t:'spin',mult:1.6,who:'celes',desc:'回転して 周りを 斬る（×1.60）'},
+  c_judge:{name:'断罪の剣',sp:32,pt:8,lv:84,t:'single',mult:2.6,wind:.35,who:'celes',desc:'聖なる 一閃（×2.60）'},
 });
 
-function p4AutoSkills(a){const k=a.key;const own=Object.keys(SKILLS).filter(id=>SKILLS[id].who===k&&SKILLS[id].lv<=a.lv&&!SKILLS[id].allMp);
-  a.skills4=own;if(!own.includes(a.eqSkill))a.eqSkill=own[own.length-1];if(k==='kyle'&&!own.includes(a.eqSkill2))a.eqSkill2=own[0];
-  if(k==='celes'){for(const id in SPELLS){const sp=SPELLS[id];if(sp.who==='celes'&&sp.lv<=a.lv&&!a.magics.includes(id))a.magics.push(id)}}}
+function p4AutoSkills(a){const k=a.key;const start=k==='kyle'?['k_iai','k_tsuki']:k==='celes'?['c_slash']:[];a.skills4=a.skills4||start.slice();for(const id of start)if(!a.skills4.includes(id))a.skills4.push(id);
+  const own=a.skills4;if(!own.includes(a.eqSkill))a.eqSkill=own[0];if(k==='kyle'&&!own.includes(a.eqSkill2))a.eqSkill2=own[1]||own[0];a.pts=a.pts||0}
 function curEqSkill(){const k=curK();if(k==='jil'||!isP4())return P.eqSkill||'soukou';return ACT().eqSkill||'c_slash'}
 /* 魔法ボタン：セレス＝魔法１、カイル＝剣技２。魔法２ボタン：セレス＝魔法２（究極スキルは ユーザーが 決める） */
 function castGirlSlot(i){const a=ACT();if(!a.slots[i]){popup(BS.pl.pos,'魔法がない','g');return}a.sel=i;castGirl()}
@@ -5204,8 +5203,8 @@ function p4AfterHurt(){const b=BS;if(!b||!isP4())return;const A=ACT();if(curK()=
   await say('',`魔物たちを やっつけた！\n${r.exp.toLocaleString()}ポイントの 経験値と ${r.gold.toLocaleString()}ゴールドを 手に入れた！`);
   for(const k of partyList()){const a=actorOf(k);if(a.lv>=100)continue;a.exp=(a.exp||0)+r.exp;
     while(a.lv<100&&a.exp>=expNext4(a.lv)){a.exp-=expNext4(a.lv);const o={hp:a.mhp,atk:a.atk,matk:a.matk,def:a.def};a.lv++;p4Recalc(a);a.hp=Math.min(a.mhp,a.hp+(a.mhp-o.hp));
-      const before=(a.skills4||[]).slice();p4AutoSkills(a);const neu=(a.skills4||[]).filter(x=>!before.includes(x));sfx('level');
-      await say('',`${a.name}は レベル${a.lv}に あがった！\n最大HP+${a.mhp-o.hp}　攻撃力+${a.atk-o.atk}　魔法攻撃+${a.matk-o.matk}　防御+${a.def-o.def}`+(neu.length?`\n剣技「${neu.map(x=>SKILLS[x].name).join('」「')}」を 覚えた！`:''))}
+      a.pts=(a.pts||0)+2;sfx('level');
+      await say('',`${a.name}は レベル${a.lv}に あがった！\n最大HP+${a.mhp-o.hp}　攻撃力+${a.atk-o.atk}　魔法攻撃+${a.matk-o.matk}　防御+${a.def-o.def}`+`\n習得ポイント（AP）+2　（キャラ画面で 剣技・魔法を 習得できる）`)}
     if(a.lv>=100)a.exp=0}
   await endBattle('win')}}
 
@@ -5214,9 +5213,13 @@ function p4AfterHurt(){const b=BS;if(!b||!isP4())return;const A=ACT();if(curK()=
 async function p4CharMenu(k){const a=actorOf(k);
   while(true){const g=p4Gear(a);const gn=s=>g[s]?GEAR4[g[s]].name:'－';
     const info=`${a.name}　Lv ${a.lv}（次まで ${a.lv>=100?'－':(expNext4(a.lv)-(a.exp||0)).toLocaleString()}）\nHP ${a.hp}/${a.mhp}　MP ${a.mp}/${a.mmp}\n攻撃 ${a.atk}　魔攻 ${a.matk}　防御 ${a.def}　魔防 ${a.mdef}\n武器：${gn('wpn')}`+(k==='celes'?`　杖：${gn('focus')}`:'')+`\n防具：${gn('arm')}　装飾：${gn('acc')}`;
-    const items=[{label:'剣技を えらぶ'},...(k==='kyle'?[{label:'魔法ボタンの 剣技'}]:[{label:'魔法を えらぶ'}]),{label:'装飾品を かえる'},{label:'もどる'}];
+    const items=[{label:'習得する',sub:`${a.pts||0} AP`},{label:'剣技を えらぶ'},...(k==='kyle'?[{label:'魔法ボタンの 剣技'}]:[{label:'魔法を えらぶ'}]),{label:'装飾品を かえる'},{label:'もどる'}];
     const j=await selectList({title:info,items});if(j<0||j===items.length-1)return;
     const lab=items[j].label;
+    if(lab==='習得する'){const list=[...Object.keys(SKILLS).filter(id=>SKILLS[id].who===k&&!a.skills4.includes(id)).map(id=>['s',id,SKILLS[id]]),...(k==='celes'?Object.keys(SPELLS).filter(id=>SPELLS[id].who==='celes'&&!a.magics.includes(id)&&SPELLS[id].pt!=null).map(id=>['m',id,SPELLS[id]]):[])].sort((x,y)=>x[2].lv-y[2].lv);
+      if(!list.length){await say('','覚えられる 剣技・魔法は もう ない。');continue}
+      const s2=await selectList({title:`習得（のこり ${a.pts||0} AP）`,items:list.map(([t,id,d])=>{const lk=d.lv>a.lv;return{label:(t==='s'?'剣技 ':'魔法 ')+d.name,sub:lk?`Lv${d.lv}から`:(d.pt||0)+'AP'+(t==='s'?'・SP'+d.sp:'・MP'+p4Mp(d)),disabled:lk||(d.pt||0)>(a.pts||0)}})});
+      if(s2>=0){const[t,id,d]=list[s2];a.pts-=d.pt||0;(t==='s'?a.skills4:a.magics).push(id);sfx('level');await say('',`${a.name}は ${d.name}を 覚えた！\n${d.desc||''}\n（「${t==='s'?'剣技を えらぶ':'魔法を えらぶ'}」で 使えるようになる）`)}continue}
     if(lab.startsWith('剣技')||lab.startsWith('魔法ボタン')){const key=lab.startsWith('剣技')?'eqSkill':'eqSkill2';const ids=a.skills4||[];
       const s=await selectList({title:lab,items:ids.map(id=>({label:(a[key]===id?'▶':'')+SKILLS[id].name+'　SP'+SKILLS[id].sp,sub:SKILLS[id].desc}))});if(s>=0){a[key]=ids[s];sfx('ok')}}
     else if(lab.startsWith('魔法を')){const ids=a.magics.filter(id=>SPELLS[id]);for(const slot of[0,1]){const s=await selectList({title:`魔法${slot+1}（${slot?'魔法２ボタン':'魔法ボタン'}）`,items:ids.map(id=>({label:(a.slots[slot]===id?'▶':'')+SPELLS[id].name+'　MP'+p4Mp(SPELLS[id]),sub:SPELLS[id].desc}))});if(s<0)break;a.slots[slot]=ids[s];sfx('ok')}}
