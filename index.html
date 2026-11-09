@@ -5950,6 +5950,8 @@ async function p4ToAlesta(){await fadeTo(1,800);stopMusic();setStep(104);
   const runAway=[npcWalk('f1',[[12,17],[12,18],[12,19],[12,20]],3.2),npcWalk('f2',[[15,16],[15,17],[15,18],[15,19],[15,20]],3.4),npcWalk('f3',[[14,18],[14,19],[14,20]],2.8)];
   await jilWalk([[13,18]]);await Promise.all(runAway);F.npcs=F.npcs.filter(n=>!['f1','f2','f3'].includes(n.id));
   await sc4('L208',{from:SC4.L208.findIndex(l=>l[1].startsWith('セレスは門をくぐる'))});
+  /* セレスは 広場へ 走った */
+  await jilWalk([[13,17],[13,16],[13,15],[13,14],[13,13]]);await p4Plaza();return
   P3.cut=false;$('#hud').hidden=false;updateHUD();saveGame()}
 async function p4Plaza(){P3.cut=true;setStep(105);
   npcSet([{id:'h1',spr:'man',x:12,y:10,lying:1,noblood:1,still:1},{id:'h2',spr:'child',x:15,y:11,dir:'left'}]);
@@ -6017,6 +6019,8 @@ async function p4Vanicia(){P3.cut=true;F.moving=false;
 /* 曲を ゆっくり 消す */
 async function fadeOutMusic4(ms){const a=AU.files&&AU.cur&&AU.files[AU.cur];if(!a){stopMusic();return}const v0=a.volume,t0=performance.now();
   await new Promise(r=>{const iv=setInterval(()=>{const k=Math.min(1,(performance.now()-t0)/ms);a.volume=v0*(1-k);if(k>=1){clearInterval(iv);r()}},50)});stopMusic();a.volume=v0}
+
+{const base=loadMap;loadMap=function(id,x,y,dir){const r=base(id,x,y,dir);if(isP4()&&id==='alesta'&&(st4()===104||st4()===105)&&!P3.fx.some(f=>f.id==='cityfire')){F.time='dusk';fxCityFire()}return r}}
 
 /* ================= 第四部 第六章「古代の足跡」 ================= */
 Object.assign(OBJ4,{112:()=>S.flags.smith4?'工業地区の 北の 門から 古代工業施設へ':'鍛冶工房を 訪ねよう（街の 左上）',113:'古代工業施設の 奥の 記録装置を 調べよう',114:'宿屋へ（街の 右上）',
