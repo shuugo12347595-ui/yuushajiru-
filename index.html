@@ -142,7 +142,7 @@ body.is-touch #mute{right:auto;left:50%;transform:translateX(-50%)}
 #mapview{position:absolute;inset:0;z-index:58;background:rgba(0,0,0,.85);display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box}
 #mapview img{max-width:100%;max-height:100%;border:3px solid var(--line);border-radius:6px;image-rendering:auto}
 @media (prefers-reduced-motion:reduce){#title .bg{animation:none}#msg .arrow{animation:none}}
-#touch-battle .mag2{width:50px;height:50px;right:226px;bottom:6px;font-size:12px;display:none}body.p4 #touch-battle .mag2{display:flex}body.p4 #touch-battle .mag{display:flex}</style>
+#touch-battle .mag2{width:50px;height:50px;right:226px;bottom:6px;font-size:12px;display:none}body.p4 #touch-battle .mag2{display:flex}body.p4 #touch-battle .mag{display:flex}body.p4.p4kyle #touch-battle .mag2{display:none}</style>
 </head>
 <body>
 
@@ -6478,17 +6478,26 @@ function p4Reach(){const f=BS&&BS.pl&&BS.pl.buf;return f&&f.p4ryouiki>0?1.35:1}
 {const base=p4CharMenu;p4CharMenu=async function(k){if(k!=='kyle')return base(k);const a=actorOf(k);
   while(true){const g=p4Gear(a);const gn=s=>g[s]?GEAR4[g[s]].name:'－';const nm=id=>id&&SKILLS[id]?SKILLS[id].name:'－';
     const info=`${a.name}　Lv ${a.lv}（次まで ${a.lv>=100?'－':(expNext4(a.lv)-(a.exp||0)).toLocaleString()}）\nHP ${a.hp}/${a.mhp}　MP ${a.mp}/${a.mmp}\n攻撃 ${a.atk}　防御 ${a.def}　武器：${gn('wpn')}\n防具：${gn('arm')}　装飾：${gn('acc')}`;
-    const items=[{label:'習得する',sub:`${a.pts||0} AP`},{label:'スキルボタンの 剣技',sub:nm(a.eqSkill)},{label:'魔法ボタンの 剣技',sub:nm(a.eqSkill2)},{label:'魔法２ボタンの 剣技',sub:nm(a.eqSkill3)},{label:'装備を かえる'},{label:'もどる'}];
-    const j=await selectList({title:info,items});if(j<0||j===5)return;
+    const items=[{label:'習得する',sub:`${a.pts||0} AP`},{label:'スキルボタンの 剣技',sub:nm(a.eqSkill)},{label:'装備を かえる'},{label:'もどる'}];
+    const j=await selectList({title:info,items});if(j<0||j===3)return;
     if(j===0){const list=Object.keys(SKILLS).filter(id=>SKILLS[id].who==='kyle'&&!SKILLS[id].ult&&!a.skills4.includes(id)).sort((x,y)=>SKILLS[x].lv-SKILLS[y].lv);if(!list.length){await say('','覚えられる 剣技は もう ない。');continue}
       const s=await selectList({title:`習得（のこり ${a.pts||0} AP）`,items:list.map(id=>{const d=SKILLS[id],lk=d.lv>a.lv;return{label:'剣技 '+d.name,sub:lk?`Lv${d.lv}から`:`${d.pt}AP・${d.mp?'MP'+d.mp:d.allMp?'MP全部':'SP'+d.sp}`,disabled:lk||d.pt>(a.pts||0)}})});
-      if(s>=0){const id=list[s],d=SKILLS[id];a.pts-=d.pt;a.skills4.push(id);sfx('level');await say('',`カイルは ${d.name}を 覚えた！\n${d.desc}`);if(!a.eqSkill)a.eqSkill=id;else if(!a.eqSkill2)a.eqSkill2=id;else if(!a.eqSkill3)a.eqSkill3=id}continue}
-    if(j>=1&&j<=3){const key=['eqSkill','eqSkill2','eqSkill3'][j-1];const ids=a.skills4;if(!ids.length){await say('','まだ 剣技を 覚えていない。キャラ画面の「習得する」から 覚えよう。');continue}
+      if(s>=0){const id=list[s],d=SKILLS[id];a.pts-=d.pt;a.skills4.push(id);sfx('level');await say('',`カイルは ${d.name}を 覚えた！\n${d.desc}`);if(!a.eqSkill)a.eqSkill=id}continue}
+    if(j===1){const key='eqSkill';const ids=a.skills4;if(!ids.length){await say('','まだ 剣技を 覚えていない。キャラ画面の「習得する」から 覚えよう。');continue}
       const s=await selectList({title:items[j].label,items:ids.map(id=>({label:(a[key]===id?'▶':'')+SKILLS[id].name,sub:SKILLS[id].desc}))});if(s>=0){a[key]=ids[s];sfx('ok')}continue}
-    if(j===4)await p4EquipMenu(k)}}}
+    if(j===2)await p4EquipMenu(k)}}}
 p4HerbText=function(){const A=ACT(),K=curK();const nm=id=>id&&SKILLS[id]?SKILLS[id].name:'－';
-  if(K==='kyle')$('#bhud .herb').textContent=`スキル：${nm(A.eqSkill)} ／ 魔法：${nm(A.eqSkill2)} ／ 魔法２：${nm(A.eqSkill3)}`;
+  document.body.classList.toggle('p4kyle',K==='kyle');const mb=$('#touch-battle .mag');if(mb)mb.textContent=K==='kyle'?'魔剣':'魔法';
+  if(K==='kyle'){const mk=BS&&BS.pl&&BS.pl.buf&&BS.pl.buf.p4maken>0;$('#bhud .herb').textContent=`スキル：${nm(A.eqSkill)} ／ 魔法：魔剣（MP${MAKEN4.mp}・${MAKEN4.dur}秒 攻撃+10%）`+(mk?`　残り${Math.ceil(BS.pl.buf.p4maken)}秒`:'')}
   else{const m1=A.slots[0]?SPELLS[A.slots[0]].name:'－',m2=A.slots[1]?SPELLS[A.slots[1]].name:'－';$('#bhud .herb').textContent=`剣技 ${nm(A.eqSkill)} ／ 魔法１：${m1} ／ 魔法２：${m2}`}};
+
+/* カイルの 魔剣（ユーザー指定）：カイルは 魔法を 覚えない。魔法ボタンで 剣に 魔力を 宿し、MP30で 20秒間 攻撃力+10%。剣技は スキルボタンだけ（魔法２ボタンは 使わない） */
+const MAKEN4={mp:30,dur:20,mul:1.1};
+p4MagicBtn=(base=>function(){if(curK()!=='kyle')return base();const b=BS,pl=b.pl,a=ACT();
+  if(a.mp<MAKEN4.mp){popup(pl.pos,'MP不足','g');return}a.mp-=MAKEN4.mp;pl.buf=pl.buf||{};pl.buf.p4maken=MAKEN4.dur;
+  sfx('tele');ringFx(pl.pos,'#a070ff',1.8,.35);burst(pl.pos.clone().add(V3(0,1,0)),'#b48cff',18,4,.12);popup(pl.pos,'魔剣！ 攻撃+10%','g');try{p4HerbText()}catch(e){}})(p4MagicBtn);
+p4Magic2=(base=>function(){if(curK()==='kyle')return;return base()})(p4Magic2);
+{const base=atkBuff;atkBuff=function(){const f=BS&&BS.pl&&BS.pl.buf;return base()*(isP4()&&f&&f.p4maken>0&&curK()==='kyle'?MAKEN4.mul:1)}}
 
 /* ================= 第四部 究極スキル（SP100 → 受けた ダメージで 金色の バー → スキルボタンが 変化） ================= */
 Object.assign(SKILLS.k_tendan,{t:'ult15',hits:15,mult:8.0,desc:'15連撃（1撃×8.0・合計×120.0）。単体。MPを すべて使い、連撃が 終わるまで 完全無敵',sp:0});
