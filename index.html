@@ -5216,7 +5216,7 @@ async function p4CharMenu(k){const a=actorOf(k);
     const items=[{label:'習得する',sub:`${a.pts||0} AP`},{label:'剣技を えらぶ'},...(k==='kyle'?[{label:'魔法ボタンの 剣技'}]:[{label:'魔法を えらぶ'}]),{label:'装飾品を かえる'},{label:'もどる'}];
     const j=await selectList({title:info,items});if(j<0||j===items.length-1)return;
     const lab=items[j].label;
-    if(lab==='習得する'){const list=[...Object.keys(SKILLS).filter(id=>SKILLS[id].who===k&&!a.skills4.includes(id)).map(id=>['s',id,SKILLS[id]]),...(k==='celes'?Object.keys(SPELLS).filter(id=>SPELLS[id].who==='celes'&&!a.magics.includes(id)&&SPELLS[id].pt!=null).map(id=>['m',id,SPELLS[id]]):[])].sort((x,y)=>x[2].lv-y[2].lv);
+    if(lab==='習得する'){const list=[...Object.keys(SKILLS).filter(id=>SKILLS[id].who===k&&!SKILLS[id].ult&&!a.skills4.includes(id)).map(id=>['s',id,SKILLS[id]]),...(k==='celes'?Object.keys(SPELLS).filter(id=>SPELLS[id].who==='celes'&&!a.magics.includes(id)&&SPELLS[id].pt!=null).map(id=>['m',id,SPELLS[id]]):[])].sort((x,y)=>x[2].lv-y[2].lv);
       if(!list.length){await say('','覚えられる 剣技・魔法は もう ない。');continue}
       const s2=await selectList({title:`習得（のこり ${a.pts||0} AP）`,items:list.map(([t,id,d])=>{const lk=d.lv>a.lv;return{label:(t==='s'?'剣技 ':'魔法 ')+d.name,sub:lk?`Lv${d.lv}から`:(d.pt||0)+'AP'+(t==='s'?'・SP'+d.sp:'・MP'+p4Mp(d)),disabled:lk||(d.pt||0)>(a.pts||0)}})});
       if(s2>=0){const[t,id,d]=list[s2];a.pts-=d.pt||0;(t==='s'?a.skills4:a.magics).push(id);sfx('level');await say('',`${a.name}は ${d.name}を 覚えた！\n${d.desc||''}\n（「${t==='s'?'剣技を えらぶ':'魔法を えらぶ'}」で 使えるようになる）`)}continue}
@@ -6424,7 +6424,7 @@ function p4Reach(){const f=BS&&BS.pl&&BS.pl.buf;return f&&f.p4ryouiki>0?1.35:1}
     const info=`${a.name}　Lv ${a.lv}（次まで ${a.lv>=100?'－':(expNext4(a.lv)-(a.exp||0)).toLocaleString()}）\nHP ${a.hp}/${a.mhp}　MP ${a.mp}/${a.mmp}\n攻撃 ${a.atk}　防御 ${a.def}　武器：${gn('wpn')}\n防具：${gn('arm')}　装飾：${gn('acc')}`;
     const items=[{label:'習得する',sub:`${a.pts||0} AP`},{label:'スキルボタンの 剣技',sub:nm(a.eqSkill)},{label:'魔法ボタンの 剣技',sub:nm(a.eqSkill2)},{label:'魔法２ボタンの 剣技',sub:nm(a.eqSkill3)},{label:'装飾品を かえる'},{label:'もどる'}];
     const j=await selectList({title:info,items});if(j<0||j===5)return;
-    if(j===0){const list=Object.keys(SKILLS).filter(id=>SKILLS[id].who==='kyle'&&!a.skills4.includes(id)).sort((x,y)=>SKILLS[x].lv-SKILLS[y].lv);if(!list.length){await say('','覚えられる 剣技は もう ない。');continue}
+    if(j===0){const list=Object.keys(SKILLS).filter(id=>SKILLS[id].who==='kyle'&&!SKILLS[id].ult&&!a.skills4.includes(id)).sort((x,y)=>SKILLS[x].lv-SKILLS[y].lv);if(!list.length){await say('','覚えられる 剣技は もう ない。');continue}
       const s=await selectList({title:`習得（のこり ${a.pts||0} AP）`,items:list.map(id=>{const d=SKILLS[id],lk=d.lv>a.lv;return{label:'剣技 '+d.name,sub:lk?`Lv${d.lv}から`:`${d.pt}AP・${d.mp?'MP'+d.mp:d.allMp?'MP全部':'SP'+d.sp}`,disabled:lk||d.pt>(a.pts||0)}})});
       if(s>=0){const id=list[s],d=SKILLS[id];a.pts-=d.pt;a.skills4.push(id);sfx('level');await say('',`カイルは ${d.name}を 覚えた！\n${d.desc}`);if(!a.eqSkill)a.eqSkill=id;else if(!a.eqSkill2)a.eqSkill2=id;else if(!a.eqSkill3)a.eqSkill3=id}continue}
     if(j>=1&&j<=3){const key=['eqSkill','eqSkill2','eqSkill3'][j-1];const ids=a.skills4;if(!ids.length){await say('','まだ 剣技を 覚えていない。キャラ画面の「習得する」から 覚えよう。');continue}
@@ -6440,7 +6440,7 @@ Object.assign(SKILLS.k_tendan,{t:'ult15',hits:15,mult:8.0,desc:'15連撃（1撃�
 Object.assign(SKILLS.c_lumi,{sp:0,desc:SKILLS.c_lumi.desc+'。放つまで 無敵'});
 const ULT4={kyle:'k_tendan',celes:'c_lumi'};
 const UG_NEED=.5; /* 最大HPの 50%ぶんの ダメージを 受けると 一周 */
-function ult4Learned(k){const a=actorOf(k);return a&&a.skills4&&a.skills4.includes(ULT4[k])}
+function ult4Learned(k){const a=actorOf(k);return !!(a&&a.lv>=100)}  /* Lv100で 解放（習得は いらない） */
 function ug4(){const b=BS;b.ug4=b.ug4||{};return b.ug4}
 /* ダメージを 受けると バーが たまる・究極スキル中は 無敵 */
 {const base=takeDamage;takeDamage=function(dmg){const b=BS;if(isP4()&&b&&b.pl.ult4){popup(b.pl.pos,'無敵','g');return 0}const r=base(dmg);
@@ -6478,6 +6478,10 @@ function ult4Hud(){const btn=document.querySelector('#touch-battle .skl');if(!bt
 {const base=p4Tick;p4Tick=function(b,dt){base(b,dt);ult4Hud()}}
 {const base=p4HerbText;p4HerbText=function(){base();const k=curK();if(ULT4[k]&&ult4Learned(k)){const u=ug4()[k]||0;$('#bhud .herb').textContent+=P.sp<100?'　／ 究極：SP100で バー出現':u>=1?'　／ 究極スキル 発動可能！（スキル）':`　／ 究極バー ${Math.floor(u*100)}%`}}}
 {const base=endBattle;endBattle=async function(r){const btn=document.querySelector('#touch-battle .skl');if(btn){btn.classList.remove('ug4on','ult4');if(btn.firstChild&&btn.firstChild.nodeType===3)btn.firstChild.nodeValue='スキル'}if(BS&&BS.pl)BS.pl.ult4=null;return base(r)}}
+
+/* Lv100に なったら 解放の お知らせ */
+{const base=winSeq;winSeq=async function(){const before={};if(isP4())for(const k of partyList())before[k]=actorOf(k).lv;await base();
+  if(isP4())for(const k of partyList()){const a=actorOf(k);if(before[k]<100&&a.lv>=100&&ULT4[k]){sfx('level');await say('',`${a.name}の 究極スキル「${SKILLS[ULT4[k]].name}」が 解放された！\n（戦闘中に SPを 100に して、ダメージを 受けると スキルボタンの 周りに 金色の バーが たまる。一周したら スキルボタンで 放てる）`)}}}}
 
 /* ================= TITLE / BOOT ================= */
 async function titleScreen(){
