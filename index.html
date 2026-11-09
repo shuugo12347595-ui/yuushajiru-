@@ -5223,7 +5223,7 @@ function p4ScaleMp(on){for(const id in SPELLS){const sp=SPELLS[id];if(sp.allMp)c
 {const base=startBattle;startBattle=function(cfg){p4ScaleMp(isP4());if(isP4())document.body.classList.add('p4');return base(cfg)}}
 
 {const base=gameOver;gameOver=async function(){if(!isP4())return base();
-  await fadeTo(1,600);stopMusic();await narrate(['セレスたちは 力尽きた……','……レベルを 上げて、もう一度 挑もう。'],2200);
+  await fadeTo(1,600);stopMusic();await narrate(['セレスは 全滅した……','……レベルを 上げて、もう一度 挑もう。'],2200);
   const sv=loadSave();if(sv&&sv.S.flags&&sv.S.flags.p4){applySave(sv);updateHUD();await fadeTo(0,500);await say('','最後に 記録した場所から やり直します。\n周りの 魔物と 戦って レベルを 上げ、リベンジしよう！');return}
   healParty();updateHUD();await fadeTo(0,500)}}
 
@@ -5883,7 +5883,7 @@ async function p4Shop(){const L=[['hiherb',800],['ether',1500],['revive',3000],[
 
 /* ================= 第一章「残された言葉」 ================= */
 async function p4Opening(){
-  P3.cut=true;$('#fade').style.opacity=1;p4Begin();setStep(100);stopMusic();
+  P3.cut=true;$('#fade').style.opacity=1;p4Begin();setStep(100);stopMusic();AU.cur=null;playMusic('banica');
   F.time='day';loadMap('fogisle',14,19,'up');P3.fog=.55;npcSet([{id:'j4',spr:'jil',x:14,y:16,dir:'down'}]);$('#hud').hidden=true;updateHUD();
   await sleep(600);await fadeTo(0,1500);
   /* ---- ムービー：霧の中へ ---- */
@@ -5904,17 +5904,17 @@ async function p4Opening(){
   /* 霧の 向こうへ */
   const fogUp=setInterval(()=>{P3.fog=Math.min(1.1,P3.fog+.02)},100);
   await npcWalk('j4',[[14,12],[14,11],[14,10],[14,9]],1.6);F.npcs=F.npcs.filter(x=>x.id!=='j4');clearInterval(fogUp);
-  await say('','そのまま 霧の 向こうへ 姿を 消した。');P3.fog=.55;
+  await say('','そのまま 霧の 向こうへ 姿を 消した。');P3.fog=.55;await fadeOutMusic4(2500);
   P3.cut=false;$('#hud').hidden=false;
   const r=await doBattle({enemies:['l_wolf','l_slime'],bg:'night',noEscape:true,title:'ジルが 操る 魔物'});
   F.npcs=F.npcs.filter(x=>!['m1','m2','m3'].includes(x.id));
   if(r.result==='lose'){healParty()}
   await sc4('L16');
   await fadeTo(1,1200);setStep(101);P3.cut=true;
-  loadMap('ngrave',7,8,'up');F.time='day';$('#hud').hidden=true;await sleep(500);await fadeTo(0,1500);
+  loadMap('ngrave',7,8,'up');F.time='day';$('#hud').hidden=true;stopMusic();ambStart();await sleep(500);await fadeTo(0,1500);
   await jilWalk([[7,7],[7,6],[7,5]]);await sleep(400);
   await sc4('L47');await sc4('L133');
-  P3.cut=false;$('#hud').hidden=false;setStep(102);p4Open('ntown');saveGame();
+  ambStop();P3.cut=false;$('#hud').hidden=false;setStep(102);p4Open('ntown');saveGame();
   await jilWalk([[7,6],[7,7],[7,8]]);
 }
 /* 第二章「雪解けの街」→ 第三章「故郷にいない勇者」 */
@@ -6002,6 +6002,10 @@ async function p4Vanicia(){P3.cut=true;F.moving=false;
   await sc4('L964');await sc4('L998');
   await fadeTo(1,800);loadMap('lumtown',13,16,'down');await fadeTo(0,800);await sc4('L1023');
   p4Open('gardia');saveGame();P3.cut=false;await p4ToGardia()}
+
+/* 曲を ゆっくり 消す */
+async function fadeOutMusic4(ms){const a=AU.files&&AU.cur&&AU.files[AU.cur];if(!a){stopMusic();return}const v0=a.volume,t0=performance.now();
+  await new Promise(r=>{const iv=setInterval(()=>{const k=Math.min(1,(performance.now()-t0)/ms);a.volume=v0*(1-k);if(k>=1){clearInterval(iv);r()}},50)});stopMusic();a.volume=v0}
 
 /* ================= 第四部 第六章「古代の足跡」 ================= */
 Object.assign(OBJ4,{112:()=>S.flags.smith4?'工業地区の 北の 門から 古代工業施設へ':'鍛冶工房を 訪ねよう（街の 左上）',113:'古代工業施設の 奥の 記録装置を 調べよう',114:'宿屋へ（街の 右上）',
