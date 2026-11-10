@@ -6730,6 +6730,17 @@ if(EDEF.orphegot)for(const f of EDEF.orphegot.forms||[])if(f.hp)f.hp*=3;
 /* （v82の 攻撃頻度・攻撃力 2倍、群れ +2体、同時攻撃 上限なしは もとに 戻した（ユーザー指定）。HPの 3倍・4倍は そのまま） */
 /* （v85の 攻撃力 1.5倍は もとに 戻した（ユーザー指定）） */
 
+/* ジルの 回復は 全回復ではなく、ヒール（詠唱を 止められなければ 最大HPの 10%回復）と 薬草（HP15%以下で 1回、最大HPの 5%回復）だけ（ユーザー指定）。
+   会話イベントの あとは 回復の 詠唱を やり直しに して、会話の 間に 詠唱が 進んで いたように ならないように する */
+const JIL4=['ejil4','ejil7','fjil','mjil'];
+{const base=updateEnemy;updateEnemy=function(e,dt){const d=e.d;
+  if(isP4()&&JIL4.includes(e.type)&&!e.dead){
+    if(e.sub==='heal'&&e.state==='active'&&!e.hitDone){e.hitDone=true;const h=Math.round(e.mhp*.1);e.hp=Math.min(e.mhp,e.hp+h);ringFx(e.pos,'#7affb0',2.2,.4);burst(e.pos,'#7affb0',18,5);popup(e.pos,'ヒール +'+h,'h');sfx('heal');banner(d.name.replace(/^BOSS：/,'')+'は ヒールを 唱えた！',1100)}
+    if(e.state==='idle'&&!e.herbed&&e.hp<e.mhp*.15){e.herbed=1;const h=Math.round(e.mhp*.05);e.hp=Math.min(e.mhp,e.hp+h);burst(e.pos,'#9aff7a',12,4);popup(e.pos,'薬草 +'+h,'h');sfx('heal');banner(d.name.replace(/^BOSS：/,'')+'は 薬草を 使った！',1000)}}
+  return base(e,dt)}}
+{const base=p4Talk;p4Talk=async function(lines){await base(lines);const b=BS;if(!b)return;for(const e of b.enemies)if(!e.dead&&e.sub==='heal'&&e.state==='windup'){e.st=0;e.healDmg=0}}}
+{const base=advPick;advPick=function(e,dist){const r=base(e,dist);if(isP4()&&JIL4.includes(e.type)&&e.sub==='heal')banner(e.d.name+'が ヒールの 詠唱を はじめた！（最大HPの6%を 削って 阻止！）',1600);return r}}
+
 /* ================= TITLE / BOOT ================= */
 async function titleScreen(){
   if(DISK===2)return titleScreen3();
