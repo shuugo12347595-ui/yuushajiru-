@@ -6527,6 +6527,15 @@ function p4Tenjin(e,magic){const b=BS,pl=b.pl,A=ACT();const D=Math.max(1,calcEne
   for(const t of b.enemies.filter(x=>!x.dead)){slashFx(t.pos,angTo(pl.pos,t.pos),true,'#ffffff',1.6);P4.raw4=Math.max(1,v);damageEnemy(t,1,'skill');if(!t.dead){hideTele(t);t.state='stagger';t.st=0;t.chain=0;t.nextSub=null;t.queue4=null}}P4.raw4=null;banner('居合・天神無双',1100);popup(pl.pos,'全体 よろけ！','g');pl.state='idle';pl.st=0;pl.vel=V3();
   const hl=Math.round(A.mhp*.5);A.hp=Math.min(A.mhp,A.hp+hl);P.sp=Math.min(100,(P.sp||0)+50);pl.buf=pl.buf||{};pl.buf.p4tenjin=20;popup(pl.pos,'+'+hl,'h');setTimeout(()=>{if(BS===b)popup(pl.pos,'SP+50 攻撃+10%','c')},250);sfx('heal');updateHUD()}
 {const base=atkBuff;atkBuff=function(){const f=BS&&BS.pl&&BS.pl.buf;return base()*(isP4()&&f&&f.p4tenjin>0&&curK()==='kyle'?1.1:1)}}
+/* カイルの Lv55より上の 技（究極スキル以外）は、敵に 当たったら 最大HPの 50%回復＋20秒間 攻撃力+10%（ユーザー指定）。
+   当たる 相手が いない 強化技（斬鉄・不動の構え・修羅の太刀）は 使ったときに 発動。1回の 技で 1回だけ */
+const KPLUS4=['k_hien','k_zantetsu','k_muei','k_fudo','k_hachiren','k_shura','k_tensho','k_ittou'];
+function p4KylePlus(){const b=BS,pl=b.pl,A=ACT();const hl=Math.round(A.mhp*.5);A.hp=Math.min(A.mhp,A.hp+hl);pl.buf=pl.buf||{};pl.buf.p4tenjin=20;popup(pl.pos,'+'+hl,'h');setTimeout(()=>{if(BS===b)popup(pl.pos,'攻撃+10%','c')},250);sfx('heal');updateHUD()}
+{const base=startSkill;startSkill=function(){if(!isP4()||curK()!=='kyle')return base();const b=BS,pl=b.pl,id=curEqSkill();base();
+  if(pl.state==='skill'&&pl.skillId===id&&KPLUS4.includes(id)){const sk=SKILLS[id];if(sk.t==='buff'){b._kplus=null;p4KylePlus()}else b._kplus={id,t:b.t,got:false}}else if(pl.skillId!==id)b._kplus=null}}
+{const base=damageEnemy;damageEnemy=function(e,mult,kind,fixed,ign){const b=BS,K=b&&b._kplus;const h0=e&&e.hp;const r=base(e,mult,kind,fixed,ign);
+  if(isP4()&&K&&!K.got&&curK()==='kyle'&&typeof kind==='string'&&kind.startsWith('skill')&&b.t-K.t<3&&e&&e.hp<h0){K.got=true;p4KylePlus()}return r}}
+for(const id of KPLUS4)if(SKILLS[id])SKILLS[id].desc+=(SKILLS[id].t==='buff'?'。使うと':'。当たると')+' 最大HP50%回復・20秒間 攻撃+10%';
 
 /* ================= 第四部 究極スキル（SP100 → 受けた ダメージで 金色の バー → スキルボタンが 変化） ================= */
 Object.assign(SKILLS.k_tendan,{t:'ult15',hits:15,mult:8.0,desc:'15連撃（1撃 必ず 9999・合計 149,985）。単体。MPを すべて使い、連撃が 終わるまで 完全無敵',sp:0});
