@@ -5791,7 +5791,8 @@ async function p4FinalRest(){P3.cut=true;F.moving=false;$('#obj').style.visibili
   await sc4('L3928');
   /* ---- 最終イベント：メテオを 破壊せよ ---- */
   if(AU.cur!=='banica'){AU.cur=null;playMusic('banica')}await sc4('L3956',{to:'#battle'});
-  let ok=false;while(!ok){ok=await meteorGame();if(!ok)await say('','光が 揺らいだ……！ もう一度！')}
+  /* ミニゲームは なし（ユーザー指定）。世界中の 光が セレスの 杖へ 集まる アニメーション */
+  await gather4();
   await sc4('L3971',{to:'画面全体が白く染まる'});await meteorBreak4();P4.meteorBgm=0;stopMusic();
   await sc4('L3995');AU.cur=null;playMusic('banica');await sc4('L4019');stopMusic();
   /* ---- ムービー：三つの 謝罪 ---- */
@@ -5906,6 +5907,15 @@ async function credits4(){const W=document.createElement('div');W.style.cssText=
 {const base=stopMusic;stopMusic=function(){if(isP4()&&P4.meteorBgm)return;return base.apply(this,arguments)}}
 /* 第123段階（メテオ発動後）の セーブを 読み込んだら、続きから 始める */
 {const base=applySave;applySave=function(sv){const r=base(sv);try{if(isP4()&&S.step===123){const go=()=>{if(uiStack.length||mode!=='field'||busy){setTimeout(go,300);return}run(async()=>{loadMap('etop',10,10,'up');npcSet([{id:'jl',spr:'jil',x:13,y:6,dir:'left',lying:1,still:1,noblood:1}]);AU.cur=null;playMusic('banica');await p4FinalRest()})};setTimeout(go,600)}}catch(e){console.error(e)}return r}}
+/* 光が 集まる（メテオ迎撃の 前。操作なしの 演出） */
+async function gather4(){const t0=performance.now();sfx('level');
+  fx4((g,cx,cy,p,now)=>{const W=g.canvas.width,H=g.canvas.height;const[px,py]=entPx('jil');const X=px-cx,Y=py-cy-10;const q=Math.min(1,(now-t0)/3200);
+    g.globalCompositeOperation='lighter';
+    for(let i=0;i<60;i++){const a=i*2.399,d=(1-((now-t0)/1400+i/60)%1);const r=Math.max(W,H)*.7*d;const x=X+Math.cos(a)*r,y=Y+Math.sin(a)*r*.7;g.fillStyle=`rgba(255,250,210,${(1-d)*.9})`;g.fillRect(Math.round(x),Math.round(y),2,2)}
+    glowOrb(g,X,Y,8+q*22+Math.sin(now/90)*3,'rgba(255,255,235,.95)','rgba(255,240,180,0)');
+    if(q>.6){const k=(q-.6)/.4;g.fillStyle=`rgba(255,250,230,${.5*k})`;g.fillRect(X-4-k*6,0,8+k*12,Y)}
+    g.globalCompositeOperation='source-over'},0,'gather');
+  await sleep(3400);F.shake=.4;sfx('boom');await flash(300,'#fffbe8');fx4Del('gather')}
 
 /* ================= 第四部 第一章〜第五章 ================= */
 const C4=(ex='通常')=>C_(ex);
