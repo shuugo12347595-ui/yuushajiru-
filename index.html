@@ -6765,6 +6765,96 @@ const JIL4=['ejil4','ejil7','fjil','mjil'];
 {const base=p4Talk;p4Talk=async function(lines){await base(lines);const b=BS;if(!b)return;for(const e of b.enemies)if(!e.dead&&e.sub==='heal'&&e.state==='windup'){e.st=0;e.healDmg=0}}}
 {const base=advPick;advPick=function(e,dist){const r=base(e,dist);if(isP4()&&JIL4.includes(e.type)&&e.sub==='heal')banner(e.d.name+'が ヒールの 詠唱を はじめた！（最大HPの6%を 削って 阻止！）',1600);return r}}
 
+/* ================= ボスが プレイヤーの 技を そのまま 使う（ユーザー指定）
+   バルバトス＝カイルの 刀の 技（刀を 持つ）、勇者ジル・魔王ジル＝ジルの 剣技と 魔法。
+   t：single 一閃／heavy 重い一撃／arc 広い薙ぎ／tsubame 斬って下がる／spin 周り／counter 構え→見切って反撃／tenjin 構え→全てを見切る
+      blink 背後へ→一閃／leap 跳んで叩きつけ／buff 強化／ union系は 元の 動き（lunge・combo・bolt・fan・charge）に 名前と 威力を つける */
+const MV4={
+  /* カイル */
+  k_iai:{n:'居合一閃',t:'single',w:.75,R:4,A:.9,mul:1.3},k_tsuki:{n:'刺突',as:'lunge',w:.45,mul:1},k_ren:{n:'三段斬り',as:'combo',chain:2,fast:.3,mul:.8},
+  k_jin:{n:'飛刃',as:'bolt',w:.55},k_kaze:{n:'旋風',t:'spin',w:.65,R:3.6,mul:1},k_kage:{n:'影踏み',t:'blink',w:.38,R:3.4,A:1.2,mul:1},
+  k_tsubame:{n:'燕返し',t:'tsubame',w:.55,R:3.4,A:1.2,mul:1.2},k_getsu:{n:'月影',t:'arc',w:.85,R:4.6,A:1.7,mul:1.4},
+  k_shin:{n:'神速八連',as:'combo',chain:7,fast:.15,mul:.45},k_ura:{n:'裏一閃',t:'heavy',w:1.05,R:4,A:1,mul:1.9},
+  k_hayate:{n:'疾風斬り',as:'lunge',w:.5,mul:1.2},k_kaeshi:{n:'返し刃',t:'counter',w:1.3},k_senpu:{n:'旋風斬',t:'spin',w:.75,R:4.2,mul:1.2},
+  k_tenjin:{n:'居合・天神無双',t:'tenjin',w:1.4},k_hien:{n:'飛燕連斬',as:'combo',chain:2,fast:.2,mul:.9},k_zantetsu:{n:'斬鉄',t:'buff',b:'zan',dur:8},
+  k_muei:{n:'無影斬',t:'blink',w:.3,R:3.6,A:1.3,mul:1.5},k_fudo:{n:'不動の構え',t:'buff',b:'fudo',dur:8},k_hachiren:{n:'八連閃',as:'combo',chain:7,fast:.14,mul:.55},
+  k_shura:{n:'修羅の太刀',t:'buff',b:'shura',dur:15},k_tensho:{n:'天翔斬',t:'leap',w:1.15,R:2.7,mul:1.7},k_ittou:{n:'一刀両断',t:'heavy',w:1.1,R:3.8,A:.8,mul:2.1},
+  k_tendan:{n:'奥義・天断一閃',as:'charge',mul:2.6,ult:1},k_maken:{n:'魔剣',t:'buff',b:'atk',dur:20,v:1.1},
+  /* ジル（剣技） */
+  j_soukou:{n:'蒼閃',as:'lunge',w:.5,mul:1},j_souga:{n:'蒼牙斬',t:'single',w:.45,R:3.2,A:1.1,mul:1},j_kabuto:{n:'兜割り',t:'heavy',w:.85,R:3.2,A:.9,mul:1.5},
+  j_hien:{n:'飛燕斬',as:'bolt',w:.5},j_souren:{n:'双牙連斬',as:'combo',chain:1,fast:.25,mul:.9},j_ryusui:{n:'流水の構え',t:'buff',b:'fudo',dur:8,v:.8},
+  j_senpu:{n:'旋風斬',t:'spin',w:.7,R:3.8,mul:1.1},j_hakou:{n:'破甲突き',as:'lunge',w:.55,mul:1.3},j_kage:{n:'影走り',t:'blink',w:.38,R:3.3,A:1.2,mul:1},
+  j_mikazuki:{n:'三日月斬',t:'arc',w:.8,R:4.2,A:1.6,mul:1.3},j_tsubame:{n:'燕返し',t:'tsubame',w:.55,R:3.3,A:1.2,mul:1.15},j_souten:{n:'蒼天一閃',t:'single',w:.8,R:4,A:.9,mul:1.6},
+  j_kenki:{n:'剣気解放',t:'buff',b:'atk',dur:12,v:1.25},j_dankuu:{n:'断空斬',as:'bolt',w:.7,mul:1.5},j_shinsoku:{n:'神速五連',as:'combo',chain:4,fast:.16,mul:.6},
+  j_soukyu:{n:'蒼穹一刀',as:'charge',mul:2.4,ult:1},
+  /* ジル（魔法）：色は プレイヤーの 魔法と 同じ */
+  j_fire:{n:'ファイア',as:'bolt',w:.6,col:'#ff6a24'},j_wind:{n:'ウィンド',as:'bolt',w:.6,col:'#9effc8'},j_stone:{n:'ストーン',as:'bolt',w:.7,col:'#c89a5a',mul:1.15},
+  j_light:{n:'ライト',as:'bolt',w:.6,col:'#fff6c8',mul:1.1},j_enchant:{n:'エンチャント',t:'buff',b:'atk',dur:15,v:1.1}};
+for(const k in MV4){const m=MV4[k];if(!m.as)SUB4[k]={w:m.w||.6,act:m.t==='buff'?.3:.3}}
+SUB4.kcut4={w:.28,act:.25};
+const BSET4={
+  barbatos:{slash:'#ff6a5a',fan:'飛刃',blink:'影踏み',boltCol:'#ff4a4a',forms:[
+    {near:['k_iai','k_tsuki','k_ren','k_kaeshi','k_senpu','k_hayate','k_tsubame','k_kaze'],far:['k_jin','k_hayate','k_kage','k_jin','k_maken']},
+    {near:['k_hachiren','k_shin','k_getsu','k_ittou','k_ura','k_tenjin','k_muei','k_hien','k_iai'],far:['k_tensho','k_muei','k_zantetsu','k_fudo','k_shura','k_jin','k_tensho'],ult:'k_tendan'}]},
+  ejil4:{slash:'#e6f0ff',fan:'飛燕斬',blink:'影走り',forms:[{near:['j_souga','j_souren','j_kabuto','j_senpu','j_soukou','j_souga'],far:['j_hien','j_soukou','j_fire','j_kage','j_hien']}]},
+  ejil7:{slash:'#e6f0ff',fan:'飛燕斬',blink:'影走り',forms:[{near:['j_souren','j_mikazuki','j_tsubame','j_hakou','j_senpu','j_souten','j_kabuto'],far:['j_hien','j_dankuu','j_kage','j_wind','j_stone','j_kenki']}]},
+  fjil:{slash:'#e6f0ff',fan:'断空斬',blink:'影走り',forms:[
+    {near:['j_shinsoku','j_mikazuki','j_souten','j_tsubame','j_hakou','j_kabuto'],far:['j_dankuu','j_kage','j_light','j_ryusui','j_kenki','j_hien']},
+    {near:['j_shinsoku','j_souten','j_mikazuki','j_senpu','j_kabuto','j_tsubame'],far:['j_dankuu','j_soukou','j_light','j_wind','j_kage','j_enchant'],ult:'j_soukyu'}]},
+  mjil:{slash:'#ff6a8a',fan:'断空斬',blink:'影走り',forms:[{near:['j_shinsoku','j_souten','j_mikazuki','j_kabuto','j_tsubame','j_senpu'],far:['j_dankuu','j_kage','j_fire','j_light','j_kenki','j_enchant','j_stone'],ult:'j_soukyu'}]}};
+function bset4Apply(type){const d=EDEF[type],S=BSET4[type];if(!d||!S)return;const names=f=>{const o={fan:S.fan,blink:S.blink};for(const k of[...f.near,...f.far,...(f.ult?[f.ult]:[])])o[k]=MV4[k].n;if(f.ult)o.charge=MV4[f.ult].n+' 充填……！';return o};
+  const f0=S.forms[0];d.subsNear=f0.near;d.subsFar=f0.far;d.subNames=names(f0);d.subsLow=null;if(S.boltCol)d.boltCol=S.boltCol;d.bset4=type;d.noBorrow=0;
+  if(d.forms)S.forms.forEach((f,i)=>{if(i&&d.forms[i]){d.forms[i].subsNear=f.near;d.forms[i].subsFar=f.far;d.forms[i].subNames=names(f)}});}
+for(const k in BSET4)bset4Apply(k);
+/* バルバトスに 刀を 持たせる */
+P4MESH.barbatos=()=>{const h=makeHumanoid({skin:'#e8c0a0',eye:'#d01828',hair:'#1a0e10',spiky:1,tunic:'#2a0e14',pants:'#1a0a0e',boots:'#0e0608',sleeve:'#2a0e14',glove:'#1a0a0e',belt:'#a01828',buckle:'#d8b048',cape:'#3a0e14',scarf:'#5a4a48',weapon:'sword',scale:1.45});
+  h.bladeM=addKatana(h.sword,h.mats,{tsuba:'#1a0a0e',ito:'#a01828',len:1.6});h.sword.rotation.x=-1;return{root:h.root,parts:h,mats:h.mats}};
+function bs4Form(e){const S=BSET4[e.d.bset4];return S&&S.forms[Math.min(e.form||0,S.forms.length-1)]}
+/* 与える ダメージ：技の 倍率・強化 */
+{const base=calcEnemyDmg;calcEnemyDmg=function(e,magic){let r=base(e,magic);if(!isP4()||!e.d||!e.d.bset4)return r;let m=e.dmgMul4||1;if(e.atkT4>0)m*=e.atkV4||1.1;if(e.zanT4>0&&BS.pl.guarding)m*=2.7;return Math.max(1,Math.round(r*m))}}
+{const base=p4Dmg;p4Dmg=function(e,dmg,kind){if(e.d&&e.d.bset4&&e.fudoT4>0)dmg=Math.max(1,Math.round(dmg*(e.fudoV4||.7)));return base(e,dmg,kind)}}
+{const base=showTele;showTele=function(e,p){if(e.kamae4){hideTele(e);return}if(e.reach4){const d=e.d,r0=d.reach;d.reach=e.reach4;try{return base(e,p)}finally{d.reach=r0}}return base(e,p)}}
+/* 構え中に 攻撃されたら 見切って 反撃 */
+{const base=enemyDefend;enemyDefend=function(e,kind){if(isP4()&&e.kamae4&&e.state==='windup'&&!e.dead){const pl=BS.pl,all=e.kamae4==='tenjin';
+    if(all||(kind!=='magic'&&e.pos.distanceTo(pl.pos)<5.5)){sfx('parry');popup(e.pos,'見切り！','c');ringFx(e.pos,'#ffffff',2,.3);BS.hitstop=.07;
+      if(all){const back=V3(Math.sin(pl.face),0,Math.cos(pl.face)).multiplyScalar(-1.6);burst(e.pos,'#ffffff',12,4);e.pos.copy(pl.pos).add(back);e.atkT4=20;e.atkV4=1.1;banner('居合・天神無双！',900)}else banner('返し刃！',800);
+      e.counterAll4=all;e.kamae4=null;e.sub='kcut4';e._s4=null;e._b4=null;e.state='windup';e.st=0;e.face=angTo(e.pos,pl.pos);e.lockFace=e.face;e.dmgMul4=all?1.7:1.4;e.reach4=null;return true}}
+  return base(e,kind)}}
+function bs4Hit(e,R,A){const pl=BS.pl;const dist=e.pos.distanceTo(pl.pos);if(dist<R&&(A==null||angDiff(e.face,angTo(e.pos,pl.pos))<A))resolveEnemyHit(e);else e.hitDone=true}
+{const base=updateEnemy;updateEnemy=function(e,dt){const d=e.d;if(!isP4()||!d||!d.bset4)return base(e,dt);const prev=e.state,S=BSET4[d.bset4],b=BS,pl=b.pl;
+  for(const k of['atkT4','zanT4','fudoT4','shuraT4'])if(e[k]>0)e[k]-=dt;
+  /* 発動の 瞬間 */
+  if(e.state==='active'&&e.sub&&e._b4!==e.sub+'a'&&(MV4[e.sub]||e.sub==='kcut4')){e._b4=e.sub+'a';const m=MV4[e.sub]||{t:'kcut'};const R=m.R,A=m.A;
+    if(m.t==='single'||m.t==='heavy'||m.t==='arc'||m.t==='tsubame'){slashFx(e.pos,e.face,m.t==='heavy',S.slash,m.t==='arc'?1.7:m.t==='heavy'?1.4:1.2);sfx(m.t==='heavy'?'boom':'slash');if(m.t==='heavy')b.shake=.35;bs4Hit(e,R,A);
+      if(m.t==='tsubame'){e.knock=V3(Math.sin(e.face),0,Math.cos(e.face)).multiplyScalar(-13)}}
+    else if(m.t==='spin'){ringFx(e.pos,S.slash,R,.35);slashFx(e.pos,e.face,false,S.slash,1.3);slashFx(e.pos,e.face+Math.PI,false,S.slash,1.3);sfx('slash');bs4Hit(e,R)}
+    else if(m.t==='blink'){slashFx(e.pos,e.face,false,S.slash,1.2);sfx('slash');bs4Hit(e,R,A)}
+    else if(m.t==='leap'){if(e.tpos)e.pos.copy(e.tpos);burst(e.pos,S.slash,30,8);ringFx(e.pos,S.slash,R+.3,.45);slashFx(e.pos,e.face,true,S.slash,1.5);b.shake=.45;sfx('boom');if(e.metM4){b.sc.remove(e.metM4);e.metM4=null}if(pl.pos.distanceTo(e.pos)<R)resolveEnemyHit(e);else e.hitDone=true}
+    else if(m.t==='kcut'){slashFx(e.pos,e.face,true,'#ffffff',1.5);sfx('slash');b.shake=.3;if(e.counterAll4)resolveEnemyHit(e);else bs4Hit(e,4.2,1.3)}
+    else if(m.t==='buff'){e.hitDone=true;const B=m.b;if(B==='atk'){e.atkT4=m.dur;e.atkV4=m.v||1.1}if(B==='zan')e.zanT4=m.dur;if(B==='fudo'){e.fudoT4=m.dur;e.fudoV4=m.v||.7}if(B==='shura')e.shuraT4=m.dur;
+      ringFx(e.pos,S.slash,2.2,.5);burst(e.pos.clone().add(V3(0,1,0)),S.slash,16,4);sfx('heal');popup(e.pos,m.n,'c')}
+    else if(m.t==='counter'||m.t==='tenjin'){e.hitDone=true;e.kamae4=null}}
+  base(e,dt);
+  /* 構え中の しるし */
+  if(e.kamae4&&e.state==='windup'){hideTele(e);if(Math.random()<.35)burst(e.pos.clone().add(V3(rnd(-.4,.4),1.3,rnd(-.4,.4))),'#ffffff',1,1.5,.08)}
+  if(e.state!==prev){
+    if(e.state==='windup'&&(prev==='idle'||prev==='active')&&e.sub&&e.sub!=='kcut4'){let k=e.sub;const F=bs4Form(e);
+      /* 奥義：HPが 半分を 切ったら 1度だけ */if(prev==='idle'&&F&&F.ult&&!e.ult4&&e.hp<e.mhp*.5&&Math.random()<.5){e.ult4=1;k=F.ult;banner(MV4[k].n+' 充填……！',1400)}
+      const m=MV4[k];e._b4=null;
+      if(m){e.dmgMul4=m.mul||1;e.reach4=m.R||null;e.kamae4=null;
+        if(m.as){e.sub=m.as;e._s4=null;if(m.as==='bolt'){d._bc0=d._bc0||d.boltCol;d.boltCol=m.col||d._bc0}if(m.as==='combo'){e.chain=m.chain;e.nextSub='combo';e.fast4=m.fast}if(m.as==='lunge'&&m.w)e.fastWind=m.w;if(m.as==='charge'){e.chargeDmg=0}}
+        else{e.sub=k;if(m.t==='counter'||m.t==='tenjin')e.kamae4=m.t;
+          if(m.t==='blink'){const back=V3(Math.sin(pl.face),0,Math.cos(pl.face)).multiplyScalar(-1.9);burst(e.pos,S.slash,14,4);e.pos.copy(pl.pos).add(back);e.pos.x=clamp(e.pos.x,-b.half,b.half);e.pos.z=clamp(e.pos.z,-b.half,b.half);burst(e.pos,S.slash,14,4);e.face=angTo(e.pos,pl.pos);e.lockFace=e.face;sfx('just')}
+          if(m.t==='leap'){e.tpos=pl.pos.clone();const c=new THREE.Mesh(new THREE.CircleGeometry(m.R,28),new THREE.MeshBasicMaterial({color:'#ff4a2a',transparent:true,opacity:.35,side:THREE.DoubleSide}));c.rotation.x=-Math.PI/2;c.position.copy(e.tpos).setY(.05);b.sc.add(c);e.metM4=c;e.m.root.position.y=0}}
+        if(e.shuraT4>0&&!e.kamae4)e.fastWind=(e.fastWind||SUB4[e.sub]&&SUB4[e.sub].w||d.wind)*.75}}
+    if(e.state==='idle'&&prev==='recover'&&e.shuraT4>0)e.atkCd*=.5;
+    if(e.state==='recover'||e.state==='idle'||e.state==='stagger'||e.dead){e.dmgMul4=null;e.reach4=null;e.kamae4=null;e.fast4=null;e.counterAll4=false;if(d._bc0){d.boltCol=d._bc0}if(e.metM4){b.sc.remove(e.metM4);e.metM4=null}}}
+  /* 連撃の 間隔 */if(e.fast4&&e.state==='windup'&&e.sub==='combo')e.fastWind=e.fast4;
+  /* 跳躍中の 高さ（天翔斬） */if(e.sub==='k_tensho'&&e.state==='windup'){const p=Math.min(1,e.st/(e.fastWind||1));e.m.root.position.y=Math.sin(p*Math.PI)*1.2}
+  /* 刀の 光（強化中） */const bm=e.m&&e.m.parts&&e.m.parts.bladeM;if(bm&&bm.emissive)bm.emissive.set(e.atkT4>0?'#6a0a0a':(e.form||0)>0?'#3a0806':'#000000')}}
+/* プレイヤーの 技を 使う ボスは、技の 選び直し（魔弾の扇・背後への 瞬間移動）を しない。ジルだけ ヒールの 詠唱は 残す */
+{const base=advPick;advPick=function(e,dist){if(isP4()&&e.d&&e.d.bset4){if(JIL4.includes(e.type)&&!e.healed&&e.hp<e.mhp*.3)return base(e,dist);e.fastWind=0;e.chain=0;return}return base(e,dist)}}
+
 /* ================= TITLE / BOOT ================= */
 async function titleScreen(){
   if(DISK===2)return titleScreen3();
