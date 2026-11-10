@@ -54,6 +54,9 @@ html,body{height:100%;margin:0;background:var(--night);color:var(--ink);font-fam
 #obj b{color:var(--gold);font-weight:normal;margin-right:6px}
 #stat{padding:6px 12px;font-size:clamp(12px,1.8vw,16px);text-align:right;line-height:1.4;font-variant-numeric:tabular-nums}
 #stat .g{color:var(--gold)}
+/* 右上の ステータスは タップで しまえる（ユーザー指定） */
+#stat{pointer-events:auto;cursor:pointer}#stat.off{display:none}
+#statTab{pointer-events:auto;cursor:pointer;display:none;padding:6px 12px;font-size:clamp(12px,1.8vw,15px);color:var(--gold);font-family:inherit}#statTab.on{display:block}
 #card{position:absolute;inset:0;background:#000;z-index:60;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center;padding:24px;box-sizing:border-box}
 #card .big{font-size:clamp(26px,5vw,46px);letter-spacing:.12em;text-wrap:balance}
 #card .small{font-size:clamp(14px,2.4vw,20px);color:var(--dim);letter-spacing:.1em;white-space:pre-line;line-height:1.9}
@@ -153,7 +156,7 @@ body.is-touch #mute{right:auto;left:50%;transform:translateX(-50%)}
   <div id="slowfx"></div>
   <div id="hud" hidden>
     <div id="obj" class="win"><b>目的</b><span></span></div>
-    <div id="stat" class="win"></div>
+    <div id="stat" class="win" title="タップで しまう"></div><button id="statTab" class="win" type="button" aria-label="ステータスを 出す">▼ ステータス</button>
   </div>
   <div id="bhud" hidden>
     <div class="me win">
@@ -6962,6 +6965,12 @@ $('#installBtn').addEventListener('click',async e=>{e.stopPropagation();
 if('serviceWorker' in navigator&&location.protocol==='https:'){try{navigator.serviceWorker.register('sw.js').catch(()=>{})}catch(e){}}
 titleScreen();
 window.__dbg={get P(){return P},get S(){return S},F,setStep,loadMap,doBattle,run,press,release,get BS(){return BS},get mode(){return mode},held,get busy(){return busy},goMap,MAPMETA,ESC,get ui(){return uiStack.length},tileAt,solidAt,npcAt,updateHUD};
+
+/* 右上の ステータス：タップで しまう／「▼ ステータス」で 出す。設定は この端末に 覚える */
+(function(){const st=document.getElementById('stat'),tab=document.getElementById('statTab');let off=false;try{off=localStorage.getItem('jil_statOff')==='1'}catch(e){}
+  const set=v=>{off=v;st.classList.toggle('off',v);tab.classList.toggle('on',v);try{localStorage.setItem('jil_statOff',v?'1':'0')}catch(e){}};
+  const tap=(el,fn)=>{el.addEventListener('pointerdown',e=>{e.stopPropagation()});el.addEventListener('click',e=>{e.stopPropagation();fn()})};
+  tap(st,()=>set(true));tap(tab,()=>set(false));set(off)})();
 </script>
 
 </body>
