@@ -5571,7 +5571,7 @@ const MAP4={};
   {const g=G4(25,19,'黒');B4(g,0,0,25,19,'黒','闇');R4(g,11,2,3,16,'紫');for(let y=3;y<17;y+=3){g[y][6]='柱';g[y][18]='柱'}g[18][12]='闇';g[1][12]='封';MAP4.mc1=S4(g)}
   /* 魔王城 第一層 黒の回廊（広い・暗い） */
   {const g=wideMaze(23,17,5151,'黒','闇');g[33][2]='<';g[32][2]='闇';
-   MAPMETA.mc2={rooms:[]};for(const[x,y]of[[38,3],[3,3],[40,26],[22,16]]){const H=g.length,W=g[0].length;const dn=g[y+3]&&g[y+3][x]==='闇',up=g[y-2]&&g[y-2][x]==='闇';B4(g,x-2,y-1,5,4,'黒','紫');let d=null;if(g[y+3]&&g[y+3][x]==='闇'){d=[x,y+2]}else if(y-3>0&&g[y-3][x]==='闇'){d=[x,y-1-1+0];d=[x,y-1]}else{d=[x,y+2];for(let yy=y+3;yy<H-1&&g[yy][x]!=='闇';yy++)g[yy][x]='闇'}g[d[1]][d[0]]='封';g[y][x]='c';MAPMETA.mc2.rooms.push({c:[x,y],door:d})}
+   MAPMETA.mc2={rooms:[]};for(const[x,y]of[[38,3],[3,3],[40,26],[22,16]]){const H=g.length,W=g[0].length;const dn=g[y+3]&&g[y+3][x]==='闇',up=g[y-2]&&g[y-2][x]==='闇';B4(g,x-2,y-1,5,4,'黒','紫');let d=null;if(g[y+3]&&g[y+3][x]==='闇'){d=[x,y+2]}else if(y-3>0&&g[y-3][x]==='闇'){d=[x,y-1];for(let yy=y-2;yy>0&&g[yy][x]!=='闇';yy--)g[yy][x]='闇'}else{d=[x,y+2];for(let yy=y+3;yy<H-1&&g[yy][x]!=='闇';yy++)g[yy][x]='闇'}g[d[1]][d[0]]='封';g[y][x]='c';MAPMETA.mc2.rooms.push({c:[x,y],door:d})}
    g[2][44]='>';g[1][44]='黒';MAP4.mc2=S4(g)}
   /* 魔王の間 */
   {const g=G4(19,15,'黒');B4(g,0,0,19,15,'黒','闇');R4(g,8,2,3,12,'紫');g[2][9]='封';for(const y of[3,6,9])for(const x of[3,15])g[y][x]='柱';g[14][9]='紫';MAP4.mthrone=S4(g)}
