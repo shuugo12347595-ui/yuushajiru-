@@ -6487,8 +6487,7 @@ function p4Reach(){const f=BS&&BS.pl&&BS.pl.buf;return f&&f.p4ryouiki>0?1.35:1}
   return dmg}}
 {const base=resolveEnemyHit;resolveEnemyHit=function(e){const b=BS,pl=b&&b.pl;const st=pl&&pl.stance4;
   if(isP4()&&st&&pl.state==='skill'&&b.t-st.t0<=st.win){const sk=SKILLS[st.id];pl.stance4=null;
-    if(sk.tenjin){const A=ACT(),h0=A.hp;base(e);const D=Math.max(0,h0-A.hp);if(A.hp<=0)return;const g=p4Gear(A),blade=(GEAR4[g.wpn]||{}).atk||0;const v=Math.round(D*2+blade*1.5);
-      sfx('parry');flash(160,'#ffffff');b.hitstop=.2;slashFx(pl.pos,angTo(pl.pos,e.pos),true,'#ffffff',2.2);ringFx(pl.pos,'#ffffff',9,.5);for(const t of b.enemies.filter(x=>!x.dead)){slashFx(t.pos,angTo(pl.pos,t.pos),true,'#ffffff',1.6);P4.raw4=Math.max(1,v);damageEnemy(t,1,'skill')}P4.raw4=null;banner('居合・天神無双',1100);pl.state='idle';pl.st=0;return}
+    if(sk.tenjin){e.hitDone=true;p4Tenjin(e,false);return}
     sfx('parry');b.hitstop=.12;popup(pl.pos,'受け流し！','g');pl.face=angTo(pl.pos,e.pos);slashFx(pl.pos,pl.face,true,'#fff2c0',1.6);damageEnemy(e,sk.mult,'counter');e.state='stagger';e.st=0;pl.state='idle';pl.st=0;return}
   return base(e)}}
 /* キャラ画面：カイルは 剣技を 3つ セット */
@@ -6515,6 +6514,17 @@ p4MagicBtn=(base=>function(){if(curK()!=='kyle')return base();const b=BS,pl=b.pl
   sfx('tele');ringFx(pl.pos,'#a070ff',1.8,.35);burst(pl.pos.clone().add(V3(0,1,0)),'#b48cff',18,4,.12);popup(pl.pos,'魔剣！ 攻撃+10%','g');try{p4HerbText()}catch(e){}})(p4MagicBtn);
 p4Magic2=(base=>function(){if(curK()==='kyle')return;return base()})(p4Magic2);
 {const base=atkBuff;atkBuff=function(){const f=BS&&BS.pl&&BS.pl.buf;return base()*(isP4()&&f&&f.p4maken>0&&curK()==='kyle'?MAKEN4.mul:1)}}
+/* 構え（返し刃・月影返し・居合・天神無双）は 魔法弾も 受け流して 反撃できる（ユーザー指定） */
+{const base=eprojHit;eprojHit=function(p){const b=BS,pl=b&&b.pl,st=pl&&pl.stance4,e=p&&p.src;
+  if(isP4()&&st&&pl.state==='skill'&&b.t-st.t0<=st.win&&e&&!e.dead){ringFx(pl.pos,'#c8a8ff',1.8,.25);const sk=SKILLS[st.id];
+    if(sk&&sk.tenjin){pl.stance4=null;p4Tenjin(e,true);return}
+    resolveEnemyHit(e);return}
+  return base(p)}}
+/* 居合・天神無双：構えの 間に 受けた 攻撃（物理・魔法）の ダメージを 受け、その×2＋刀の攻撃力×1.5で 敵 全体に 反撃（防御無視・上限9999） */
+function p4Tenjin(e,magic){const b=BS,pl=b.pl,A=ACT();const D=Math.max(1,calcEnemyDmg(e,magic));takeDamage(D);sfx('hurt');afterPlayerDamage();if(A.hp<=0||b.ended)return;
+  const g=p4Gear(A),blade=(GEAR4[g.wpn]||{}).atk||0;const v=Math.round(D*2+blade*1.5);
+  sfx('parry');flash(160,'#ffffff');b.hitstop=.2;slashFx(pl.pos,angTo(pl.pos,e.pos),true,'#ffffff',2.2);ringFx(pl.pos,'#ffffff',9,.5);
+  for(const t of b.enemies.filter(x=>!x.dead)){slashFx(t.pos,angTo(pl.pos,t.pos),true,'#ffffff',1.6);P4.raw4=Math.max(1,v);damageEnemy(t,1,'skill')}P4.raw4=null;banner('居合・天神無双',1100);pl.state='idle';pl.st=0;pl.vel=V3()}
 
 /* ================= 第四部 究極スキル（SP100 → 受けた ダメージで 金色の バー → スキルボタンが 変化） ================= */
 Object.assign(SKILLS.k_tendan,{t:'ult15',hits:15,mult:8.0,desc:'15連撃（1撃 必ず 9999・合計 149,985）。単体。MPを すべて使い、連撃が 終わるまで 完全無敵',sp:0});
