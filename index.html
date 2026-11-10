@@ -5144,7 +5144,8 @@ function p4Begin(){S.flags.p4=1;S.leader='celes';S.hideParty=0;P3.hideJil=false;
 function isSwordK(k){return k==='jil'||k==='kyle'||(k==='celes'&&isP4()&&!!S.flags.p4sword)}
 function actAtk(){const k=curK();if(k==='jil'||!isP4())return atkOf();const a=ACT();let v=a.atk||1;
   if(k==='kyle'&&p4Gear(a).wpn==='mutsu'&&a.hp/a.mhp<=.3)v*=1.15;return v}
-const COMBO4={jil:[0,1,1.1,1.7],kyle:[0,1.15,1.3,1.9],celes:[0,.55,.65,.75]};
+/* 通常攻撃の 倍率（ユーザー指定：カイルは 陸奥守吉行で Lv70≒1500・Lv80≒2000（3段目・防御400の敵）、セレスは その半分くらい） */
+const COMBO4={jil:[0,1,1.1,1.7],kyle:[0,2.69,3.04,4.45],celes:[0,1.33,1.57,1.82]};
 const CNT4={jil:1.25,kyle:1.55,celes:.75};
 function comboMul(c){return(COMBO4[curK()]||COMBO4.jil)[c]}
 function counterMul(){return CNT4[curK()]||COUNTER_MULT}
