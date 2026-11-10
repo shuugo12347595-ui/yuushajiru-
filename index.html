@@ -6462,7 +6462,11 @@ for(const k in SEED4)ITEMS['seed_'+k]={name:SEED4[k][0],desc:`食べると ${SEE
 const seedAmt=(a,k)=>Math.max(1,Math.round((P4STAT[a.key]||P4STAT.celes)[k]*.015));
 {const base=p4Recalc;p4Recalc=function(a){base(a);const b=a.seed;if(!b)return;const hpR=a.hp/a.mhp,mpR=a.mp/a.mmp;for(const k in b)a[k]+=b[k];p4Cap(a);a.hp=Math.round(a.mhp*hpR);a.mp=Math.round(a.mmp*mpR)}}
 for(const k in SEED4)P4ITEMUSE['seed_'+k]=async()=>{const ks=partyList();let t=ks[0];if(ks.length>1){const j=await selectList({title:`だれに 食べさせる？（${SEED4[k][0]}）`,items:ks.map(x=>({label:actorOf(x).name,sub:`${SEED4[k][1]} +${seedAmt(actorOf(x),k)}`}))});if(j<0)return;t=ks[j]}
-  const a=actorOf(t);const n=seedAmt(a,k);a.seed=a.seed||{};a.seed[k]=(a.seed[k]||0)+n;P.items['seed_'+k]--;p4Recalc(a);sfx('level');await say('',`${a.name}は ${SEED4[k][0]}を 食べた！\n${SEED4[k][1]}が ${n} 上がった！`);updateHUD()};
+  const a=actorOf(t);const have=P.items['seed_'+k]||0;if(have<1)return;
+  /* いくつ 食べるか 選ぶ（ユーザー指定） */let cnt=1;if(have>1){const opts=[1,5,10,50,100].filter(c=>c<have);opts.push(have);const one=seedAmt(a,k);
+    const j=await selectList({title:`いくつ 食べる？（${SEED4[k][0]} 持っている数 ${have}）`,items:opts.map(c=>({label:c===have?`全部（${c}個）`:`${c}個`,sub:`${SEED4[k][1]} +${one*c}`}))});if(j<0)return;cnt=opts[j]}
+  const before=a[k];const n=seedAmt(a,k)*cnt;a.seed=a.seed||{};a.seed[k]=(a.seed[k]||0)+n;P.items['seed_'+k]=have-cnt;p4Recalc(a);const up=a[k]-before;sfx('level');
+  await say('',`${a.name}は ${SEED4[k][0]}を ${cnt>1?cnt+'個 ':''}食べた！\n${SEED4[k][1]}が ${up} 上がった！${up<n?'（上限に 達した）':''}`);updateHUD()};
 /* 宝箱の 場所：行き止まりや 部屋の すみ（入口から 行ける 場所だけ） */
 const SEEDMAPS={fac2:[[2,19],3],fac3:[[14,21],2],fac4:[[15,21],2],maouryo:[[3,29],3],mc2:[[2,32],4],shr1:[[14,19],2],shr2:[[12,17],1],icec1:[[15,21],2],elvin:[[16,25],2],elem1:[[20,28],3],elem2:[[17,25],2],elem3:[[15,21],2],elem5:[[15,21],2],tdeep:[[10,15],1]};
 (function(){const kinds=['atk','mhp','matk','def','mmp'];let n=0;MAPMETA.seeds={};
