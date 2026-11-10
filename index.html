@@ -6680,6 +6680,18 @@ NPCS.dbgroom=[
 /* ダメージの 上限は 9999（カンスト）（ユーザー指定）。カイルの 奥義・天断一閃は 必ず 9999×15回 */
 {const base=p4Dmg;p4Dmg=function(e,dmg,kind){const r=base(e,dmg,kind);return r>9999?9999:r}}
 
+/* ---- 倍率の 見直し（ユーザー指定「両方」） ----
+   ① 通常攻撃は 刀に 関係なく：通常攻撃（コンボ・よろけ中の 追い打ち）の ときだけ、刀の 攻撃力を 最強の 刀（カイル＝陸奥守吉行、セレス＝光の剣）に 置きかえて 計算する。
+      → どの 刀でも カイル Lv70≒1500・Lv80≒2000（3段目・防御400の敵）、セレスは その半分くらい。
+   ② 剣技・魔法は 通常攻撃の 上がり幅に 合わせて 倍率を 上げる（カイル×2.34、セレス×2.42 ＝ 通常攻撃の 上げ幅と 同じ）。究極スキルは そのまま。 */
+const NORM_WPN4={kyle:'mutsu',celes:'lsword'},SKILL_UP4={kyle:2.34,celes:2.42};
+{const base=actAtk;actAtk=function(){let v=base();const k=curK();if(P4.normal4&&isP4()&&NORM_WPN4[k]){const a=ACT(),w=GEAR4[p4Gear(a).wpn],r=GEAR4[NORM_WPN4[k]];v=v-((w&&w.atk)||0)+((r&&r.atk)||0)}return v}}
+{const base=damageEnemy;damageEnemy=function(e,mult,kind,fixed,ign){const b=BS;const norm=isP4()&&b&&b.pl&&b.pl.state==='attack'&&(kind===''||kind==='heavy'||kind==='counter'||kind==null)&&fixed==null;
+  if(norm)P4.normal4=true;try{return base(e,mult,kind,fixed,ign)}finally{if(norm)P4.normal4=false}}}
+for(const id in SKILLS){const sk=SKILLS[id],f=SKILL_UP4[sk.who];if(!f||sk.ult||!sk.mult||id==='k_tendan'||id==='c_lumi')continue;const old=sk.mult;sk.mult=Math.round(old*f*10)/10;
+  if(sk.desc)sk.desc=sk.desc.replace(/×\s*([0-9]+\.[0-9]+)/g,(m,n)=>Math.abs(+n-old)<.001?'×'+sk.mult.toFixed(1):m).replace(/合計×([0-9]+\.[0-9]+)/,(m,n)=>Math.abs(+n-old)<.001?'合計×'+sk.mult.toFixed(1):m)}
+{const base=girlDmg;girlDmg=function(a,pow,el,e){if(isP4()&&a&&a.key==='celes')pow*=SKILL_UP4.celes;return base(a,pow,el,e)}}
+
 /* ================= TITLE / BOOT ================= */
 async function titleScreen(){
   if(DISK===2)return titleScreen3();
