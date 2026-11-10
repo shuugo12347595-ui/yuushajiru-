@@ -6869,6 +6869,14 @@ function fjilPlayerLike(e){return isP4()&&e.d&&e.d.bset4==='fjil'}
   if(e.state!=='windup')e.spd4=0;
   if(e.state!==prev){if(e.state==='recover'&&prev==='active'&&Math.random()<.55){e.st=d.rec;e.next4=1}
     if(e.state==='idle'&&prev==='recover'&&e.next4){e.next4=0;e.atkCd=0}}}}
+/* 白い神殿・地下の 転移装置から 海底遺跡『エレムの沈都』へ（ユーザー指定。ヴァニシア戦の あとから 使える） */
+{const base=TILEACT['核'];TILEACT['核']=async(x,y)=>{if(isP4()&&F.map.id==='tdeep'&&st4()>=111){
+    const j=await selectList({title:'古代の 転移装置',items:[{label:'エレムの沈都へ 転移する',sub:'海底遺跡'},{label:'やめる'}]});if(j!==0)return;
+    sfx('tele');await flash(300,'#bff0ff');await goMap('sunk1',MAPMETA.sunk1.up[0]+1,MAPMETA.sunk1.up[1],'right');return}
+  return base(x,y)}}
+STEP4.unshift((m,x,y,t,s)=>{if(m.id==='sunk1'&&t==='^'){run(async()=>{const wing=!!(S.flags.dest4&&Object.keys(S.flags.dest4).some(k=>DEST4[k]&&DEST4[k].wing))&&S.flags.wing4;
+    const L=[{label:'転移装置で 白い神殿へ 戻る'},...(wing?[{label:'虹の翼で 移動する'}]:[]),{label:'やめる'}];const j=await selectList({title:'どうする？',items:L});
+    if(j===0){sfx('tele');await flash(300,'#bff0ff');await goMap('tdeep',10,5,'down')}else if(wing&&j===1)await p4Travel(true);else F.px+=1});return 1}return 0});
 
 /* ================= TITLE / BOOT ================= */
 async function titleScreen(){
