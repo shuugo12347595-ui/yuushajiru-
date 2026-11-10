@@ -6457,7 +6457,7 @@ async function p4Eve(){P3.cut=true;F.moving=false;
   const L=SC4.L1567;if(L&&!L.some(l=>l[0]==='#battle')){const i=L.findIndex(l=>l[1]==='撃破後');if(i>=0)L.splice(0,i,['#battle','戦闘開始'])}})();
 
 /* ================= 第四部 ステータスを 上げる 種・木の実（ダンジョンの 宝箱） ================= */
-const SEED4={atk:['力の種','攻撃力'],matk:['魔力の種','魔法攻撃力'],def:['守りの種','防御力'],mhp:['命の木の実','最大HP'],mmp:['不思議な木の実','最大MP']};
+const SEED4={atk:['力の種','攻撃力'],matk:['魔力の種','魔法攻撃力'],def:['守りの種','防御力'],mdef:['魔法の守りの種','魔法防御力'],mhp:['命の木の実','最大HP'],mmp:['不思議な木の実','最大MP']};
 for(const k in SEED4)ITEMS['seed_'+k]={name:SEED4[k][0],desc:`食べると ${SEED4[k][1]}が ずっと 上がる`,field:1};
 const seedAmt=(a,k)=>Math.max(1,Math.round((P4STAT[a.key]||P4STAT.celes)[k]*.015));
 {const base=p4Recalc;p4Recalc=function(a){base(a);const b=a.seed;if(!b)return;const hpR=a.hp/a.mhp,mpR=a.mp/a.mmp;for(const k in b)a[k]+=b[k];p4Cap(a);a.hp=Math.round(a.mhp*hpR);a.mp=Math.round(a.mmp*mpR)}}
@@ -6469,7 +6469,7 @@ for(const k in SEED4)P4ITEMUSE['seed_'+k]=async()=>{const ks=partyList();let t=k
   await say('',`${a.name}は ${SEED4[k][0]}を ${cnt>1?cnt+'個 ':''}食べた！\n${SEED4[k][1]}が ${up} 上がった！${up<n?'（上限に 達した）':''}`);updateHUD()};
 /* 宝箱の 場所：行き止まりや 部屋の すみ（入口から 行ける 場所だけ） */
 const SEEDMAPS={fac2:[[2,19],3],fac3:[[14,21],2],fac4:[[15,21],2],maouryo:[[3,29],3],mc2:[[2,32],4],shr1:[[14,19],2],shr2:[[12,17],1],icec1:[[15,21],2],elvin:[[16,25],2],elem1:[[20,28],3],elem2:[[17,25],2],elem3:[[15,21],2],elem5:[[15,21],2],tdeep:[[10,15],1]};
-(function(){const kinds=['atk','mhp','matk','def','mmp'];let n=0;MAPMETA.seeds={};
+(function(){const kinds=['atk','mhp','matk','def','mmp','mdef'];let n=0;MAPMETA.seeds={};
   for(const id in SEEDMAPS){const[[sx,sy],cnt]=SEEDMAPS[id];const rows=BASE[id].map(r=>[...r]);const pass=c=>!SOLID.has(c)||'扉関封凍熱'.includes(c);
     const seen=reach4(rows,sx,sy,pass);const H=rows.length,W=rows[0].length;const floorC=rows[sy][sx];const cand=[];
     for(const k of seen){const[x,y]=k.split(',').map(Number);const c=rows[y][x];if(SOLID.has(c)||'<>昇c^+光線熱凍'.includes(c))continue;let walls=0;for(const[dx,dy]of[[1,0],[-1,0],[0,1],[0,-1]]){const t=rows[y+dy]&&rows[y+dy][x+dx];if(t==null||SOLID.has(t))walls++}
