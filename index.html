@@ -6564,6 +6564,97 @@ function ult4Hud(){const btn=document.querySelector('#touch-battle .skl');if(!bt
 {const base=winSeq;winSeq=async function(){const before={};if(isP4())for(const k of partyList())before[k]=actorOf(k).lv;await base();
   if(isP4())for(const k of partyList()){const a=actorOf(k);if(before[k]<100&&a.lv>=100&&ULT4[k]){sfx('level');await say('',`${a.name}の 究極スキル「${SKILLS[ULT4[k]].name}」が 解放された！\n（戦闘中に SPを 100に して、ダメージを 受けると スキルボタンの 周りに 金色の バーが たまる。一周したら スキルボタンで 放てる）`)}}}}
 
+/* ================= デバッグルーム（ユーザー指定） =================
+   入り方：フィールドの どこでも、上→右→下→左 を 3周（12回）押してから A。
+   中で できること：ボスを 操作する（第一部〜第四部の ボス全部・技は全部）／サウンドテスト（全曲）／
+   経験値バトル（とても弱く 攻撃しないが 経験値50万）／ドーピングの 種を 何個でも もらえる。 */
+const DBG={seq:[],t:0,music:null};
+const DBG_SEQ=['up','right','down','left','up','right','down','left','up','right','down','left'];
+{const base=press;press=function(acts){
+  try{if(mode==='field'&&!uiStack.length&&!busy&&F.map&&F.map.id!=='dbgroom'){
+    for(const a of acts){
+      if(a==='up'||a==='right'||a==='down'||a==='left'){const now=performance.now();if(DBG.t&&now-DBG.t>2500)DBG.seq=[];DBG.t=now;DBG.seq.push(a);if(DBG.seq.length>12)DBG.seq.shift()}
+      else if(a==='ok'){const ok=DBG.seq.length===12&&DBG.seq.every((x,i)=>x===DBG_SEQ[i])&&performance.now()-DBG.t<2500;DBG.seq=[];if(ok){run(dbgEnter);return}}
+      else DBG.seq=[]}}}catch(e){}
+  return base(acts)}}
+
+/* ---- 部屋 ---- */
+{const g=G4(13,9,'壁');B4(g,0,0,13,9,'壁','鉄');for(const x of[1,11])g[1][x]='機';g[1][6]='盤';BASE.dbgroom=S4(g)}
+MAPDEF.dbgroom={name:'デバッグルーム',fill:'壁',music:()=>DBG.music||null};
+async function dbgEnter(){S.flags.dbgRet={id:F.map.id,x:F.px,y:F.py,dir:F.dir};sfx('tele');DBG.music=null;await goMap('dbgroom',6,6,'up');
+  if(!S.flags.dbgSeen){S.flags.dbgSeen=1;await say('','……どこかに 迷いこんだようだ。\n（デバッグルーム）')}}
+async function dbgLeave(){const r=S.flags.dbgRet||{id:'world',x:7,y:15,dir:'down'};DBG.music=null;await goMap(r.id,r.x,r.y,r.dir)}
+
+/* ---- ボス一覧（第一部〜第四部） ---- */
+const DBG_BOSS=[['dragon','ヴェルデドラゴン'],['griffon','グリフォン'],['regnas','炎竜レグナス'],['bknight','亡国の騎士'],['swordsman','黒衣の剣士'],['serpent','シーサーペント'],['kwolf','キングウルフ'],['mweapon','古代魔導兵器'],['guardian','沈都の守護者'],
+  ['avarion','アヴァリオン（一戦目）'],['avarion3','アヴァリオン（二戦目）'],['valzerion','ヴァルゼリオン'],['venodias','ヴェノディアス'],['nemetis','ネメティス'],['qbanica','バニカ'],
+  ['ejil4','勇者ジル（一戦目）'],['d_knight','暗黒騎士'],['e_beast','古代防衛獣'],['e_golem','殲滅機兵'],['vanicia','暴食のヴァニシア'],['runaway','暴走機兵'],['guardian4','古代守護機兵'],['orphegot','怠惰のオルフェゴート'],
+  ['ejil7','勇者ジル（二戦目）'],['colossus','聖晶の守護巨像'],['barbatos','憤怒のバルバトス'],['warden','氷晶の番人'],['unicorn','聖獣ユニコーン'],['annihil','古代殲滅機兵'],['kishin','中枢守護機神'],
+  ['fjil','勇者ジル（最後の戦い）'],['mjil','魔王ジル'],['eve','原罪イブ']].filter(([k])=>EDEF[k]);
+const DBG_MUS={vanicia:'vanicia',orphegot:'orphegot',barbatos:'barbatos',mjil:'maoujil',ejil4:'jil1',ejil7:'jil2',fjil:'jil2',unicorn:'unicorn',qbanica:'banica',avarion:'avarion',avarion3:'avarion',valzerion:'valzerion',venodias:'venodias',nemetis:'nemetis',eve:'hidden'};
+const DBG_MV={swing:'なぎ払い',lunge:'突進',breath:'ブレス',bolt:'魔法弾',rain:'魔法の雨',burst:'バースト',slow:'スロウ',fan:'魔弾の扇',blink:'背後へ 瞬間移動',combo:'連撃',pull:'吸い寄せ',summon:'呼び寄せ',vortex:'飢餓の渦',ranbu:'暴食乱舞',quake:'地割れ',charge:'突撃',meteor:'メテオ',ring:'光輪',absorb:'吸収',shield:'シールド',hop:'とびかかり'};
+function dbgMoves(d){let m;if(d.kind==='boss'||d.kind==='dragon'){m=[...new Set([...(d.subsNear||[]),...(d.subsFar||[]),...(d.subsLow||[])])];if(!m.length)m=['swing','lunge','breath'];if(d.adv&&!d.noBorrow)m.push('fan','blink')}
+  else if(d.kind==='caster')m=[...new Set(d.casts||['bolt'])];else m=[d.kind];return m}
+function dbgMvName(d,k){if(k==='breath'&&d.breathName)return d.breathName.replace(/[！!].*$/,'');const s=d.subNames&&d.subNames[k];return s?s.replace(/[！!（(].*$/,'').trim()||DBG_MV[k]||k:DBG_MV[k]||k}
+
+/* ---- ボス操作：ボスを 自分で 動かす。相手は 練習用の かかし（倒れない） ---- */
+async function dbgPuppet(type){const keep=partyList()[0];const A=actorOf(keep);const hp0=A.hp,mp0=A.mp;
+  const r=await doBattle({enemies:[type],bg:'field',noEscape:true,noDie:true,puppet:1,solo:keep,title:EDEF[type].name+' を 操作中',music:DBG_MUS[type]||(EDEF[type].p4?'midboss':'boss')});
+  A.hp=hp0;A.mp=mp0;$('#dbgpup')&&$('#dbgpup').remove();updateHUD();return r}
+function dbgPupHud(){const b=BS;if(!b||!b.cfg.puppet)return;let el=$('#dbgpup');if(!el){el=document.createElement('div');el.id='dbgpup';el.style.cssText='position:fixed;left:50%;top:8px;transform:translateX(-50%);z-index:60;background:rgba(10,8,20,.86);border:2px solid #e8e0ff;border-radius:8px;color:#fff;font:15px/1.5 inherit;padding:6px 14px;text-align:center;pointer-events:none;max-width:92vw';document.body.appendChild(el)}
+  const e=b.puppetE,d=e.d;el.innerHTML=`<b style="color:#ffd040">${d.name}</b>　技 ${b.pIdx+1}/${b.pMoves.length}：<b>${dbgMvName(d,b.pMoves[b.pIdx])}</b><br><span style="font-size:12px;opacity:.85">攻撃＝技を出す　スキル＝次の技　魔法＝前の技　交代＝やめる</span>`}
+{const base=startBattle;startBattle=function(cfg){const p=base(cfg);try{if(cfg.puppet&&BS){const b=BS;b.puppetE=b.enemies[0];b.pMoves=dbgMoves(b.puppetE.d);b.pIdx=0;b.pMv=V3();b.cfg.maxAtk=9;
+    const g=new THREE.Group();const wood=new THREE.MeshLambertMaterial({color:'#8a5a30'}),straw=new THREE.MeshLambertMaterial({color:'#e8c860'});
+    const post=new THREE.Mesh(new THREE.CylinderGeometry(.09,.09,1.8,8),wood);post.position.y=.9;g.add(post);const bar=new THREE.Mesh(new THREE.BoxGeometry(1.3,.12,.12),wood);bar.position.y=1.35;g.add(bar);
+    const body=new THREE.Mesh(new THREE.CylinderGeometry(.32,.38,.8,10),straw);body.position.y=1.1;g.add(body);const head=new THREE.Mesh(new THREE.SphereGeometry(.28,12,10),straw);head.position.y=1.75;g.add(head);
+    b.sc.add(g);b.scare=g;$('#bhud').hidden=true;setTimeout(dbgPupHud,50)}}catch(e){console.error(e)}return p}}
+{const base=updatePlayer;updatePlayer=function(dt){const b=BS;if(!b||!b.cfg.puppet)return base(dt);
+  const e=b.puppetE;b.pMv=moveInput();
+  if(consume('switch')){if(!b.ended){b.ended=true;run(async()=>{banner('操作を やめた',700);await sleep(600);await endBattle('run')})}return}
+  if(consume('skill')){b.pIdx=(b.pIdx+1)%b.pMoves.length;sfx('move');dbgPupHud()}
+  if(consume('magic')||consume('magic2')){b.pIdx=(b.pIdx+b.pMoves.length-1)%b.pMoves.length;sfx('move');dbgPupHud()}
+  if(consume('atk')&&e.state==='idle')e.pTrig=b.pMoves[b.pIdx];
+  for(const k of['dodge','guard','item'])consume(k);
+  const mi=moveInput,hg=held.guard;moveInput=()=>V3();held.guard=false;try{base(dt)}finally{moveInput=mi;held.guard=hg}
+  const A=ACT();A.hp=A.mhp;A.mp=A.mmp;for(const p of b.party)p.m.root.visible=false;if(b.scare){b.scare.position.set(b.pl.pos.x,0,b.pl.pos.z);b.scare.rotation.y=b.pl.face}}}
+{const base=updateEnemy;updateEnemy=function(e,dt){const b=BS;if(!b||!b.cfg.puppet||e!==b.puppetE)return base(e,dt);
+  const d=e.d;e.hp=e.mhp;
+  if(e.state!=='idle')return base(e,dt);
+  const p0=e.pos.clone(),k=e.pTrig;e.pTrig=null;const sv={start:d.start,sn:d.subsNear,sf:d.subsFar,sl:d.subsLow,casts:d.casts,adv:d.adv};
+  if(k){e.atkCd=0;d.start=1e9;d.adv=0;d.subsLow=null;const s=k==='blink'?'swing':k;if(d.kind==='boss'||d.kind==='dragon'){d.subsNear=[s];d.subsFar=[s]}if(d.kind==='caster')d.casts=[s]}
+  else e.atkCd=Math.max(e.atkCd,5);
+  try{base(e,dt)}finally{d.start=sv.start;d.subsNear=sv.sn;d.subsFar=sv.sf;d.subsLow=sv.sl;d.casts=sv.casts;d.adv=sv.adv}
+  if(k==='blink'&&e.state==='windup'){const pl=b.pl;const back=V3(Math.sin(pl.face),0,Math.cos(pl.face)).multiplyScalar(-1.9);burst(e.pos,'#c0a0ff',14,4);e.pos.copy(pl.pos).add(back);e.pos.x=clamp(e.pos.x,-b.half,b.half);e.pos.z=clamp(e.pos.z,-b.half,b.half);burst(e.pos,'#c0a0ff',14,4);e.face=angTo(e.pos,pl.pos);e.lockFace=e.face;e.fastWind=.34;banner((d.subNames&&d.subNames.blink)||'背後を 取った！',700);sfx('just')}
+  if(e.state==='idle'){e.pos.copy(p0);const mv=b.pMv||V3();if(mv.lengthSq()>.01){e.pos.addScaledVector(mv,Math.max(3.2,d.speed||3)*1.25*dt);e.pos.x=clamp(e.pos.x,-b.half,b.half);e.pos.z=clamp(e.pos.z,-b.half,b.half);e.face=turnTo(e.face,Math.atan2(mv.x,mv.z),dt*10)}}}}
+
+/* ---- 経験値バトル：とても 弱く 攻撃しないが 経験値50万 ---- */
+EDEF.dbgslime=Object.assign({},EDEF.slime,{name:'デバッグスライム',goldOf:'slime',tint:'#ff8af0',hp:10,atk:0,def:0,exp:500000,gold:0,speed:.6,start:0,cd:[99,99],noGold:1});
+NO_SCALE.dbgslime=1;
+
+/* ---- サウンドテスト ---- */
+const DBG_SONGS=[['title','タイトル'],['town','町'],['field','フィールド'],['forest','森'],['battle','戦闘'],['boss','ボス戦'],['dungeon','ダンジョン'],['ruin','遺跡'],['desert','砂漠'],['oasis','オアシス'],['sea','海'],['luminas','ルミナス'],
+  ['banica','バニカのテーマ'],['avarion','アヴァリオン戦'],['valzerion','ヴァルゼリオン戦'],['venodias','ヴェノディアス戦'],['nemetis','ネメティス戦'],['nfield','ノルヴェルト'],
+  ['maouryo','魔王領'],['maoujo','魔王城'],['factory','古代工業施設'],['elem','エレム中枢'],['midboss','中ボス戦'],['vanicia','暴食のヴァニシア戦'],['orphegot','怠惰のオルフェゴート戦'],['barbatos','憤怒のバルバトス戦'],
+  ['unicorn','聖獣ユニコーン戦'],['jil1','勇者ジル戦（第一形態）'],['jil2','勇者ジル戦（第二形態）'],['maoujil','魔王ジル戦'],['hidden','原罪イブ戦']].filter(([k])=>BGM_FILES[k]);
+async function dbgSound(){let j=0;while(true){j=await selectList({title:'サウンドテスト（選ぶと 流れる）',items:[...DBG_SONGS.map(([k,n])=>({label:(DBG.music===k?'♪ ':'')+n})),{label:'止める'},{label:'もどる'}],start:j});
+  if(j<0||j===DBG_SONGS.length+1)return;if(j===DBG_SONGS.length){DBG.music=null;stopMusic();AU.cur=null;continue}DBG.music=DBG_SONGS[j][0];playMusic(DBG.music)}}
+
+/* ---- ドーピング：種を 何個でも ---- */
+async function dbgSeeds(){if(typeof SEED4==='undefined'||!isP4()){await say('種の人','この 種は 第四部から 使えるんだ。');return}
+  const ks=Object.keys(SEED4);while(true){const j=await selectList({title:'どの 種が ほしい？',items:[...ks.map(k=>({label:SEED4[k][0],sub:`${SEED4[k][1]}が 上がる（持っている数 ${P.items['seed_'+k]||0}）`})),{label:'全部の 種'},{label:'もどる'}]});
+    if(j<0||j===ks.length+1)return;const n=[1,10,99][await selectList({title:'いくつ？',items:[{label:'1個'},{label:'10個'},{label:'99個'}]})];if(!n)continue;
+    for(const k of(j===ks.length?ks:[ks[j]]))P.items['seed_'+k]=(P.items['seed_'+k]||0)+n;sfx('chest');await say('種の人',`${j===ks.length?'全部の 種':SEED4[ks[j]][0]}を ${n}個 わたしたぞ。\n（どうぐ から 食べると 上がる）`);updateHUD()}}
+
+NPCS.dbgroom=[
+  {id:'dbg1',spr:'shade',x:2,y:2,talk:async()=>{await say('あやしい男','ボスの 中に 入ってみるかい？\n相手は かかしだ。好きなだけ 技を 試しな。');
+    const j=await selectList({title:'操作する ボス',items:[...DBG_BOSS.map(([k,n])=>({label:n,sub:dbgMoves(EDEF[k]).length+'つの 技'})),{label:'やめる'}]});if(j<0||j===DBG_BOSS.length)return;await dbgPuppet(DBG_BOSS[j][0])}},
+  {id:'dbg2',spr:'youth',x:4,y:2,talk:async()=>{await say('音の人','ぜんぶの 曲が 聴けるよ。');await dbgSound()}},
+  {id:'dbg3',spr:'merchant',x:6,y:3,talk:async()=>{await say('バトル係','とっても 弱くて なにも してこない スライムだ。\nでも 経験値は 50万！');
+    const j=await selectList({title:'戦う？',items:[{label:'戦う'},{label:'やめる'}]});if(j!==0)return;const r=await doBattle({enemies:['dbgslime'],bg:'field'});if(r&&r.result==='lose')await gameOver()}},
+  {id:'dbg4',spr:'smith',x:8,y:2,talk:async()=>{await say('種の人','ステータスが 上がる 種を 好きなだけ やろう。');await dbgSeeds()}},
+  {id:'dbg5',spr:'guard',x:10,y:2,talk:async()=>{const j=await selectList({title:'もとの 場所に もどる？',items:[{label:'もどる'},{label:'まだ いる'}]});if(j===0)await dbgLeave()}},
+];
+
 /* ================= TITLE / BOOT ================= */
 async function titleScreen(){
   if(DISK===2)return titleScreen3();
