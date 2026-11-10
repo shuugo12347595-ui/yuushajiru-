@@ -5828,9 +5828,9 @@ async function redSky4(){fx4((g,cx,cy,p,now)=>{const W=g.canvas.width,H=g.canvas
 async function wishes4(){const cuts=[
   {map:['rieve',11,10],npc:[{id:'w1',spr:'mother',x:6,y:8,dir:'up'},{id:'w2',spr:'man',x:13,y:9,dir:'up'},{id:'w3',spr:'child',x:9,y:9,dir:'up'}],key:'リーヴェの村'},
   {map:['ntown',16,13],npc:[{id:'w1',spr:'woman',x:14,y:12,dir:'up'},{id:'w2',spr:'child',x:17,y:12,dir:'up'},{id:'w3',spr:'oldwoman',x:12,y:14,dir:'up'}],key:'ノルヴェルト'},
-  {map:['gardia',15,14],npc:[{id:'w1',spr:'smith',x:13,y:13,dir:'up'},{id:'w2',spr:'man',x:17,y:13,dir:'up'}],key:'ガルディア'},
-  {map:['alesta',13,12],npc:[{id:'w1',spr:'woman',x:11,y:11,dir:'up'},{id:'w2',spr:'guard',x:15,y:11,dir:'up'},{id:'w3',spr:'child',x:13,y:13,dir:'up'}],key:'アレスタ'},
-];const L=SC4.L3879;const idx=c=>L.findIndex(l=>l[1].startsWith(c.key));
+  {map:['gardia',15,14],npc:[{id:'w1',spr:'smith',x:13,y:13,dir:'up'},{id:'w2',spr:'man',x:17,y:13,dir:'up'}],key:'帝都ガルディア'},
+  {map:['salamar',13,12],npc:[{id:'w1',spr:'merchant',x:10,y:12,dir:'up'},{id:'w2',spr:'merchant',x:16,y:12,dir:'up'},{id:'w3',spr:'man',x:13,y:13,dir:'up'}],key:'サラマール王国'},
+];const L=SC4.L3879;const idx=c=>L.findIndex(l=>l[1]===c.key);/* 各地の 場面は 1回ずつ（見出しと 完全一致で 探す） */
   await sc4('L3879',{to:'リーヴェの村'});
   for(let i=0;i<cuts.length;i++){const c=cuts[i];await fadeTo(1,500);F.time='dusk';loadMap(c.map[0],c.map[1],c.map[2],'up');P3.hideJil=true;F.npcs=[];npcSet(c.npc);fxClear();
     const lights=[];const t0=performance.now();
