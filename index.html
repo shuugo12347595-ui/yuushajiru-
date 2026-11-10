@@ -6681,10 +6681,11 @@ NPCS.dbgroom=[
 {const base=p4Dmg;p4Dmg=function(e,dmg,kind){const r=base(e,dmg,kind);return r>9999?9999:r}}
 
 /* ---- 通常攻撃・剣技・魔法の 倍率は レベルで 上がる（ユーザー指定）----
-   Lv1で 1倍、レベルが 上がるほど 大きくなり Lv80で 最大（カイル 1.65倍／セレス 2.4倍）。
+   Lv1で 1倍、レベルが 上がるほど 大きくなり Lv80で 最大（カイル 2.51倍／セレス 4.34倍）。
+   目安（ユーザー指定）：最初の 武器のままで Lv75の カイルの 3段目が 防御400の敵に 約1500、セレスは その半分。
    → 陸奥守吉行の カイルで 3段目（防御400の敵）Lv70≒1500・Lv80≒2000、セレスは その半分くらい。
    通常攻撃と 剣技・攻撃魔法に 同じ倍率を かけるので、技と 通常攻撃の 強さの 関係は もとの まま。究極スキルは 対象外。 */
-function lvMul4(k,lv){lv=lv||1;const t=Math.min(1,(lv-1)/79);if(k==='kyle')return 1+.65*Math.pow(t,.8);if(k==='celes')return 1+1.4*Math.pow(t,1.5);return 1}
+function lvMul4(k,lv){lv=lv||1;const t=Math.min(1,(lv-1)/79);if(k==='kyle')return 1+1.51*Math.pow(t,.8);if(k==='celes')return 1+3.34*Math.pow(t,1.5);return 1}
 {const base=damageEnemy;damageEnemy=function(e,mult,kind,fixed,ign){const b=BS,k=curK();
   if(isP4()&&b&&fixed==null&&(k==='kyle'||k==='celes')&&kind!=='magic'&&kind!=='shot'&&!(b.pl&&b.pl.state==='skill'&&(b.pl.skillId==='c_lumi'||b.pl.skillId==='k_tendan')))mult*=lvMul4(k,ACT().lv);
   return base(e,mult,kind,fixed,ign)}}
