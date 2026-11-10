@@ -5758,15 +5758,15 @@ const ANIM4={unicorn:'kwolf',runaway:'sentinel',guardian4:'guardian',colossus:'c
 Object.assign(OBJ4,{123:'……',124:'（第四部 おわり）旅の 続き：虹の翼で 世界を めぐろう。海底遺跡には 何かが 眠っている……'});
 async function p4Final(){P3.cut=true;F.moving=false;$('#obj').style.visibility='hidden';
   npcSet([{id:'jl',spr:'jil',x:10,y:5,dir:'down'}]);await jilWalk([[10,9],[10,8]]);
-  await sc4('L3633');await sc4('L3673',{to:'#battle'});saveGame();
+  let r;if(!S.flags.fjil4){await sc4('L3633');await sc4('L3673',{to:'#battle'});saveGame();
   stopMusic();
-  let r=await doBattle({enemies:['fjil'],bg:'elem',noEscape:true,music:'jil1',title:'FINAL BOSS：勇者ジル'});
+  r=await doBattle({enemies:['fjil'],bg:'elem',noEscape:true,music:'jil1',title:'FINAL BOSS：勇者ジル'});
   if(r.result==='lose'){$('#obj').style.visibility='';P3.cut=false;await gameOver();return}
-  await sc4('L3673',{from:SC4.L3673.findIndex(l=>l[0]==='#battle')+1});
+  S.flags.fjil4=1;await sc4('L3673',{from:SC4.L3673.findIndex(l=>l[0]==='#battle')+1});
   await sc4('L3710');
   /* ---- ムービー：魔力装置と 融合する ジル ---- */
   await sc4('L3739',{to:'#bgm'});await fusion4();await sc4('L3739',{from:SC4.L3739.findIndex(l=>l[0]==='#bgm')+1});
-  saveGame();
+  saveGame()}else{/* 勇者ジルには 勝っていて、魔王ジルに 負けた ときは 魔王ジル戦から やり直す */npcSet([{id:'jl',spr:'mjil',x:10,y:8,dir:'down'}]);await say(J_('戦闘'),'……まだ 立つのか');stopMusic()}
   r=await doBattle({enemies:['mjil'],bg:'throne',noEscape:true,music:'maoujil',title:'FINAL BOSS：魔王ジル'});
   if(r.result==='lose'){$('#obj').style.visibility='';P3.cut=false;await gameOver();return}
   /* ---- ムービー：三つの 光の 衝突 ---- */
@@ -6240,7 +6240,9 @@ async function p4ToThrone(){P3.cut=true;await sc4('L2213');await fadeTo(1,700);s
   await sc4('L2386',{from:SC4.L2386.findIndex(l=>l[1]==='画面が戻る。')+1});
   S.flags.mjil=1;await sc4('L2429',{to:'#battle'});
   await sc4('L2461',{to:'#battle'});saveGame();
-  /* 勇者ジル戦（HP10%まで） */
+  await p4ThroneBattle()}
+/* 勇者ジル戦（HP10%まで）。負けて ロードしたら 魔王の間から ここだけ やり直す */
+async function p4ThroneBattle(){P3.cut=true;$('#hud').hidden=true;
   const r=await doBattle({enemies:['ejil7'],bg:'throne',noEscape:true,music:'jil1',title:'BOSS：勇者ジル',
     p4b:{at:[{f:.75,run:async()=>{await p4Talk(lines4('L2494'))}},{f:.5,run:async()=>{await p4Talk(lines4('L2524'))}},{f:.25,run:async()=>{await p4Talk(lines4('L2559'))}}],
       onFloor:async e=>{const b=BS;b.ended=true;hideTele(e);await sleep(300);await endBattle('event')}},onStart:e=>{}});
@@ -6299,6 +6301,10 @@ function purifyGame(){return new Promise(res=>{
 {const o=OBJ4[116];OBJ4[116]=()=>F.map&&F.map.id==='maouryo'?'魔王城へ（魔王領の 北東の 奥にある 紫の 城門）':(typeof o==='function'?o():o)}
 
 {const L=SC4.L1937;if(L)for(const l of L)if(l[1]==='城内も暗かった。')l[1]='城内は静まり返っていた。'}
+
+/* 魔王の間で 記録した あとに 負けた ときは、ロード後に 勇者ジル戦だけ やり直す（ユーザー指摘：やられたら 進めなかった） */
+{const base=applySave;applySave=function(sv){const r=base(sv);try{if(isP4()&&S.step===117&&S.map==='mthrone'&&S.flags.mjil){F.npcs=[];npcSet([{id:'dv',spr:'deathvald',x:9,y:5,dir:'down',lying:1,still:1,noblood:1},{id:'jl',spr:'jil',x:9,y:8,dir:'down'},{id:'ky',spr:'kyle',x:10,y:13,dir:'up'}]);
+  setTimeout(()=>run(async()=>{await say(J_('戦闘'),'……まだ 来るのか');await p4ThroneBattle()}),600)}}catch(e){console.error(e)}return r}}
 
 /* ================= 第四部 第九章〜最終章・裏ボス ================= */
 Object.assign(OBJ4,{119:()=>({sfield:'雪原の 北の 聖晶の神殿へ',shr1:S.flags.light4?'奥の 扉へ':'聖晶の 鏡を 回して 光路を つなげ（'+P4MIRROR.filter(Boolean).length+'/3）',shr2:'氷晶の 祭壇を 抜けろ',shr3:S.flags.meteorRec?'最深部へ……':'星辰記録室の 記録装置を 調べよう'})[F.map&&F.map.id]||'聖晶の神殿へ（ノルヴェルト大陸。船で）',
