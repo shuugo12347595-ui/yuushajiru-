@@ -6445,7 +6445,7 @@ Object.assign(SKILLS,{
   k_hayate:SK4('kyle',40,'疾風斬り',14,{t:'dash',mult:2.5},'高速 踏み込み斬撃（×2.5）'),
   k_kaeshi:SK4('kyle',45,'返し刃',16,{t:'stance',mult:3.0,parry:1,win:.8},'構えて 攻撃を 受け流し、反撃（×3.0）'),
   k_senpu:SK4('kyle',50,'旋風斬',20,{t:'spin',mult:3.5},'周囲への 回転斬り（×3.5）'),
-  k_tenjin:SK4('kyle',55,'居合・天神無双',0,{t:'stance',tenjin:1,win:1,mp:80,ct:12},'1秒 構え、その間に 受けた ダメージ×2＋刀の攻撃力×1.5で 反撃。敵の 防御を 無視・上限なし（MP80／12秒）'),
+  k_tenjin:SK4('kyle',55,'居合・天神無双',0,{t:'stance',tenjin:1,win:1,mp:80,ct:12},'1秒 構え、その間に 受けた ダメージ×2＋刀の攻撃力×1.5で 反撃。敵の 防御を 無視（MP80／12秒）'),
   k_hien:SK4('kyle',60,'飛燕連斬',26,{t:'multi',mult:5.0,hits:3,gap:.1},'高速3連撃（合計×5.0）'),
   k_zantetsu:SK4('kyle',65,'斬鉄',22,{t:'buff',buff:'p4zantetsu',dur:8},'8秒間、敵の 防御力を 30%無視'),
   k_muei:SK4('kyle',70,'無影斬',32,{t:'rush',mult:6.0,behind:1},'敵の 背後へ 移動して 斬撃（×6.0）'),
@@ -6517,7 +6517,7 @@ p4Magic2=(base=>function(){if(curK()==='kyle')return;return base()})(p4Magic2);
 {const base=atkBuff;atkBuff=function(){const f=BS&&BS.pl&&BS.pl.buf;return base()*(isP4()&&f&&f.p4maken>0&&curK()==='kyle'?MAKEN4.mul:1)}}
 
 /* ================= 第四部 究極スキル（SP100 → 受けた ダメージで 金色の バー → スキルボタンが 変化） ================= */
-Object.assign(SKILLS.k_tendan,{t:'ult15',hits:15,mult:8.0,desc:'15連撃（1撃×8.0・合計×120.0）。単体。MPを すべて使い、連撃が 終わるまで 完全無敵',sp:0});
+Object.assign(SKILLS.k_tendan,{t:'ult15',hits:15,mult:8.0,desc:'15連撃（1撃 必ず 9999・合計 149,985）。単体。MPを すべて使い、連撃が 終わるまで 完全無敵',sp:0});
 Object.assign(SKILLS.c_lumi,{sp:0,desc:SKILLS.c_lumi.desc+'。放つまで 無敵'});
 const ULT4={kyle:'k_tendan',celes:'c_lumi'};
 const UG_NEED=.5; /* 最大HPの 50%ぶんの ダメージを 受けると 一周 */
@@ -6547,7 +6547,7 @@ function fireUlt4(k){const b=BS,pl=b.pl,a=ACT(),id=ULT4[k],sk=SKILLS[id];if(a.mp
   if(T<.55){if(Math.random()<.6)burst(pl.pos.clone().add(V3(0,1,0)),'#ffd700',2,2,.08);return}
   if(U.n<15&&T>=at){const a=(U.n*2.399)%(Math.PI*2);pl.pos.set(tg.pos.x+Math.sin(a)*(1.3+tg.d.r),0,tg.pos.z+Math.cos(a)*(1.3+tg.d.r));pl.face=angTo(pl.pos,tg.pos);
     slashFx(pl.pos,pl.face+(U.n%2?.6:-.6),U.n===14,U.n===14?'#ffffff':'#ffd700',U.n===14?2.4:1.3);sfx('slash');trailFx('#ffd700');
-    if(!tg.dead)damageEnemy(tg,8.0,'skill+');U.n++;b.hitstop=U.n===15?.25:.03;if(U.n===15){b.shake=.7;ringFx(tg.pos,'#ffffff',5,.6);burst(tg.pos.clone().add(V3(0,1,0)),'#fff4c0',40,10);sfx('boom')}}
+    if(!tg.dead){const m4=tg.mode4,w4=tg.weakT;tg.mode4=null;tg.weakT=0;damageEnemy(tg,1,'skill+',9999);tg.mode4=m4;tg.weakT=w4}U.n++;b.hitstop=U.n===15?.25:.03;if(U.n===15){b.shake=.7;ringFx(tg.pos,'#ffffff',5,.6);burst(tg.pos.clone().add(V3(0,1,0)),'#fff4c0',40,10);sfx('boom')}}
   if(U.n>=15&&T>at+.35){pl.ult4=null;pl.state='idle';pl.st=0}}}
 /* 金色の バー（スキルボタンの 周り）と 表示の 切り替え */
 (function(){const st=document.createElement('style');st.textContent=`#touch-battle .skl{position:absolute}#touch-battle .skl .ug4{position:absolute;inset:-6px;border-radius:50%;pointer-events:none;background:conic-gradient(#ffd700 calc(var(--ug,0)*1turn),rgba(255,215,0,.15) 0);-webkit-mask:radial-gradient(circle,transparent 58%,#000 60%);mask:radial-gradient(circle,transparent 58%,#000 60%);opacity:0;transition:opacity .3s}
@@ -6654,6 +6654,9 @@ NPCS.dbgroom=[
   {id:'dbg4',spr:'smith',x:8,y:2,talk:async()=>{await say('種の人','ステータスが 上がる 種を 好きなだけ やろう。');await dbgSeeds()}},
   {id:'dbg5',spr:'guard',x:10,y:2,talk:async()=>{const j=await selectList({title:'もとの 場所に もどる？',items:[{label:'もどる'},{label:'まだ いる'}]});if(j===0)await dbgLeave()}},
 ];
+
+/* ダメージの 上限は 9999（カンスト）（ユーザー指定）。カイルの 奥義・天断一閃は 必ず 9999×15回 */
+{const base=p4Dmg;p4Dmg=function(e,dmg,kind){const r=base(e,dmg,kind);return r>9999?9999:r}}
 
 /* ================= TITLE / BOOT ================= */
 async function titleScreen(){
