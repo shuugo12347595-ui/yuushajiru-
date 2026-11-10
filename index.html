@@ -6283,6 +6283,8 @@ function purifyGame(){return new Promise(res=>{
     if(v>=z0&&v<=z1){fill[path]++;sfx('heal');if(fill[path]>=3){path++;sfx('ok');if(path>=3){end();return}setZone()}heat=Math.max(0,heat-.1)}else{heat=Math.min(1,heat+.45);sfx('hurt');fill[path]=Math.max(0,fill[path]-1)}msg()};
   const end=()=>{done=true;cancelAnimationFrame(raf);popUI(h);setTimeout(()=>{W.remove();res(!fail)},fail?600:1200);if(!fail){flash(900,'#ffffff')}};
   pushUI(h)})}
+/* 魔王領に 着いたら 目的を 切りかえる（ユーザー指摘：着いても「魔王領へ」の ままだった） */
+{const o=OBJ4[116];OBJ4[116]=()=>F.map&&F.map.id==='maouryo'?'魔王城へ（魔王領の 北東の 奥にある 紫の 城門）':(typeof o==='function'?o():o)}
 
 /* ================= 第四部 第九章〜最終章・裏ボス ================= */
 Object.assign(OBJ4,{119:()=>({sfield:'雪原の 北の 聖晶の神殿へ',shr1:S.flags.light4?'奥の 扉へ':'聖晶の 鏡を 回して 光路を つなげ（'+P4MIRROR.filter(Boolean).length+'/3）',shr2:'氷晶の 祭壇を 抜けろ',shr3:S.flags.meteorRec?'最深部へ……':'星辰記録室の 記録装置を 調べよう'})[F.map&&F.map.id]||'聖晶の神殿へ（ノルヴェルト大陸。船で）',
