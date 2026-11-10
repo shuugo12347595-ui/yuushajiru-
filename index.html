@@ -6856,15 +6856,14 @@ function bs4Hit(e,R,A){const pl=BS.pl;const dist=e.pos.distanceTo(pl.pos);if(dis
 {const base=advPick;advPick=function(e,dist){if(isP4()&&e.d&&e.d.bset4){if(JIL4.includes(e.type)&&!e.healed&&e.hp<e.mhp*.3)return base(e,dist);e.fastWind=0;e.chain=0;return}return base(e,dist)}}
 /* 最終戦 勇者ジル 第1形態：プレイヤーと 同じ 動き（ユーザー指定）
    ・通常攻撃の 3連撃（技名は 出さない）を いちばん よく 使う
-   ・ここから下は 全形態（ユーザー指定）：地面の 予告（赤い円・帯）は 出さない。斬る 直前に 剣が 一瞬 光るだけ（ここが パリィの 合図）
+   ・ここから下は 全形態（ユーザー指定）：赤い 予告は 攻撃の 直前（黄色に なる 0.14秒前）に なってから 出す
    ・フェイントは しない。速さと 連続攻撃で 読みにくくする：構えが 速い（0.75倍）、攻撃の あと 55%で 隙なしに 次の 攻撃へ */
 MV4.j_combo3={as:'combo',chain:2,fast:.24,mul:.9};
 BSET4.fjil.forms[0].near=['j_combo3','j_combo3','j_combo3','j_shinsoku','j_mikazuki','j_combo3','j_souten','j_tsubame','j_hakou','j_kabuto'];
 BSET4.fjil.forms[0].far=['j_soukou','j_kage','j_combo3','j_dankuu','j_light','j_hien','j_kenki','j_ryusui'];
 bset4Apply('fjil');
 function fjilPlayerLike(e){return isP4()&&e.d&&e.d.bset4==='fjil'}
-{const base=showTele;showTele=function(e,p){const r=base(e,p);if(fjilPlayerLike(e)){hideTele(e);const w=e.fastWind||e.d.wind;if(e.st<.05)e.glint4=0;
-    if(!e.glint4&&e.st>=w-YELLOW){e.glint4=1;const at=e.pos.clone().add(V3(Math.sin(e.face)*.5,1.5,Math.cos(e.face)*.5));burst(at,'#ffffff',6,1.6,.07);ringFx(at,'#e6f0ff',.45,.12)}}return r}}
+{const base=showTele;showTele=function(e,p){const r=base(e,p);if(fjilPlayerLike(e)){const w=e.fastWind||e.d.wind;if(e.st<w-(YELLOW+.14))hideTele(e)}return r}}
 {const base=updateEnemy;updateEnemy=function(e,dt){const prev=e.state;base(e,dt);if(!fjilPlayerLike(e)||e.dead)return;const d=e.d;
   if(e.state==='windup'&&e.sub!=='combo'&&e.sub!=='heal'&&e.sub!=='charge'&&!e.spd4&&!(SUB4[e.sub]&&e._s4!==e.sub+'w')){e.spd4=1;e.fastWind=(e.fastWind||(SUB4[e.sub]&&SUB4[e.sub].w)||d.wind)*.75}
   if(e.state!=='windup')e.spd4=0;
