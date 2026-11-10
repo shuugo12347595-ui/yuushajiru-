@@ -6695,6 +6695,11 @@ function lvMul4(k,lv){lv=lv||1;const t=Math.min(1,(lv-1)/79);if(k==='kyle')retur
   return base(e,mult,kind,fixed,ign)}}
 {const base=girlDmg;girlDmg=function(a,pow,el,e){if(isP4()&&a&&a.key==='celes')pow*=lvMul4('celes',a.lv);return base(a,pow,el,e)}}
 
+/* 魔王城の 中は 明るく（ユーザー指定）。魔王領の 敵と 怠惰の オルフェゴートは HP 3倍（ノーダメージで 倒せたため）。
+   魔王領の 敵は 魔王城の 中にも 出る 同じ 敵なので、城の 中の 敵も 3倍に なる */
+for(const id of['mc1','mc2'])if(MAPDEF[id])delete MAPDEF[id].dark;
+for(const k of['d_shade','d_wolf','d_mage','d_knight','orphegot'])if(EDEF[k])EDEF[k].hp*=3;
+
 /* ================= TITLE / BOOT ================= */
 async function titleScreen(){
   if(DISK===2)return titleScreen3();
