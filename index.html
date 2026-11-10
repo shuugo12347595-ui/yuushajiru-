@@ -6703,6 +6703,13 @@ for(const k of['d_shade','d_wolf','d_mage','d_knight','orphegot'])if(EDEF[k])EDE
    形態変化する ボスは 第2形態の HPも 同じ倍率。オルフェゴートの 第2形態も 3倍に そろえる */
 for(const k of['i_wolf','s_spirit','i_mage','s_golem','i_golem','e_soldier','e_cannon','e_beast','e_golem','ejil7','colossus','barbatos','warden','unicorn','annihil','kishin','fjil','mjil','eve']){const d=EDEF[k];if(!d)continue;d.hp*=4;for(const f of d.forms||[])if(f.hp)f.hp*=4}
 if(EDEF.orphegot)for(const f of EDEF.orphegot.forms||[])if(f.hp)f.hp*=3;
+/* 魔王領より あとの 敵・ボスを さらに 強く（ユーザー指定）：攻撃の 頻度 2倍（次の 攻撃までの 間隔 半分・ため 時間 0.75倍）、攻撃力 2倍、
+   雑魚の 群れは 2体 ふやし、同時に 攻撃して くる 数の 上限を なくす */
+const LATE4=['d_shade','d_wolf','d_mage','d_knight','orphegot','i_wolf','s_spirit','i_mage','s_golem','i_golem','e_soldier','e_cannon','e_beast','e_golem','ejil7','colossus','barbatos','warden','unicorn','annihil','kishin','fjil','mjil','eve'];
+{const fast=o=>{if(o.cd)o.cd=o.cd.map(v=>v/2);if(o.wind)o.wind=Math.max(.25,o.wind*.75);if(o.atk)o.atk*=2};
+ for(const k of LATE4){const d=EDEF[k];if(!d)continue;fast(d);d.capMul=(d.capMul||1)*2;for(const f of d.forms||[])fast(f)}}
+for(const t of['demon','dcastle','snow4','shrine','ice','elem'])if(ENC[t])ENC[t]=ENC[t].map(g=>g.concat([g[0],g[g.length-1]]));
+{const base=startBattle;startBattle=function(cfg){if(isP4()&&cfg&&cfg.enemies&&cfg.enemies.some(k=>LATE4.includes(k)))cfg.maxAtk=99;return base(cfg)}}
 
 /* ================= TITLE / BOOT ================= */
 async function titleScreen(){
