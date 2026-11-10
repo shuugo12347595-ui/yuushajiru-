@@ -5144,8 +5144,8 @@ function p4Begin(){S.flags.p4=1;S.leader='celes';S.hideParty=0;P3.hideJil=false;
 function isSwordK(k){return k==='jil'||k==='kyle'||(k==='celes'&&isP4()&&!!S.flags.p4sword)}
 function actAtk(){const k=curK();if(k==='jil'||!isP4())return atkOf();const a=ACT();let v=a.atk||1;
   if(k==='kyle'&&p4Gear(a).wpn==='mutsu'&&a.hp/a.mhp<=.3)v*=1.15;return v}
-/* 通常攻撃の 倍率（ユーザー指定：カイルは 陸奥守吉行で Lv70≒1500・Lv80≒2000（3段目・防御400の敵）、セレスは その半分くらい） */
-const COMBO4={jil:[0,1,1.1,1.7],kyle:[0,2.69,3.04,4.45],celes:[0,1.33,1.57,1.82]};
+/* 通常攻撃の 基本倍率（レベルによる 上乗せは lvMul4） */
+const COMBO4={jil:[0,1,1.1,1.7],kyle:[0,1.15,1.3,1.9],celes:[0,.55,.65,.75]};
 const CNT4={jil:1.25,kyle:1.55,celes:.75};
 function comboMul(c){return(COMBO4[curK()]||COMBO4.jil)[c]}
 function counterMul(){return CNT4[curK()]||COUNTER_MULT}
@@ -6680,17 +6680,15 @@ NPCS.dbgroom=[
 /* ダメージの 上限は 9999（カンスト）（ユーザー指定）。カイルの 奥義・天断一閃は 必ず 9999×15回 */
 {const base=p4Dmg;p4Dmg=function(e,dmg,kind){const r=base(e,dmg,kind);return r>9999?9999:r}}
 
-/* ---- 倍率の 見直し（ユーザー指定「両方」） ----
-   ① 通常攻撃は 刀に 関係なく：通常攻撃（コンボ・よろけ中の 追い打ち）の ときだけ、刀の 攻撃力を 最強の 刀（カイル＝陸奥守吉行、セレス＝光の剣）に 置きかえて 計算する。
-      → どの 刀でも カイル Lv70≒1500・Lv80≒2000（3段目・防御400の敵）、セレスは その半分くらい。
-   ② 剣技・魔法は 通常攻撃の 上がり幅に 合わせて 倍率を 上げる（カイル×2.34、セレス×2.42 ＝ 通常攻撃の 上げ幅と 同じ）。究極スキルは そのまま。 */
-const NORM_WPN4={kyle:'mutsu',celes:'lsword'},SKILL_UP4={kyle:2.34,celes:2.42};
-{const base=actAtk;actAtk=function(){let v=base();const k=curK();if(P4.normal4&&isP4()&&NORM_WPN4[k]){const a=ACT(),w=GEAR4[p4Gear(a).wpn],r=GEAR4[NORM_WPN4[k]];v=v-((w&&w.atk)||0)+((r&&r.atk)||0)}return v}}
-{const base=damageEnemy;damageEnemy=function(e,mult,kind,fixed,ign){const b=BS;const norm=isP4()&&b&&b.pl&&b.pl.state==='attack'&&(kind===''||kind==='heavy'||kind==='counter'||kind==null)&&fixed==null;
-  if(norm)P4.normal4=true;try{return base(e,mult,kind,fixed,ign)}finally{if(norm)P4.normal4=false}}}
-for(const id in SKILLS){const sk=SKILLS[id],f=SKILL_UP4[sk.who];if(!f||sk.ult||!sk.mult||id==='k_tendan'||id==='c_lumi')continue;const old=sk.mult;sk.mult=Math.round(old*f*10)/10;
-  if(sk.desc)sk.desc=sk.desc.replace(/×\s*([0-9]+\.[0-9]+)/g,(m,n)=>Math.abs(+n-old)<.001?'×'+sk.mult.toFixed(1):m).replace(/合計×([0-9]+\.[0-9]+)/,(m,n)=>Math.abs(+n-old)<.001?'合計×'+sk.mult.toFixed(1):m)}
-{const base=girlDmg;girlDmg=function(a,pow,el,e){if(isP4()&&a&&a.key==='celes')pow*=SKILL_UP4.celes;return base(a,pow,el,e)}}
+/* ---- 通常攻撃・剣技・魔法の 倍率は レベルで 上がる（ユーザー指定）----
+   Lv1で 1倍、レベルが 上がるほど 大きくなり Lv80で 最大（カイル 1.65倍／セレス 2.4倍）。
+   → 陸奥守吉行の カイルで 3段目（防御400の敵）Lv70≒1500・Lv80≒2000、セレスは その半分くらい。
+   通常攻撃と 剣技・攻撃魔法に 同じ倍率を かけるので、技と 通常攻撃の 強さの 関係は もとの まま。究極スキルは 対象外。 */
+function lvMul4(k,lv){lv=lv||1;const t=Math.min(1,(lv-1)/79);if(k==='kyle')return 1+.65*Math.pow(t,.8);if(k==='celes')return 1+1.4*Math.pow(t,1.5);return 1}
+{const base=damageEnemy;damageEnemy=function(e,mult,kind,fixed,ign){const b=BS,k=curK();
+  if(isP4()&&b&&fixed==null&&(k==='kyle'||k==='celes')&&kind!=='magic'&&kind!=='shot'&&!(b.pl&&b.pl.state==='skill'&&(b.pl.skillId==='c_lumi'||b.pl.skillId==='k_tendan')))mult*=lvMul4(k,ACT().lv);
+  return base(e,mult,kind,fixed,ign)}}
+{const base=girlDmg;girlDmg=function(a,pow,el,e){if(isP4()&&a&&a.key==='celes')pow*=lvMul4('celes',a.lv);return base(a,pow,el,e)}}
 
 /* ================= TITLE / BOOT ================= */
 async function titleScreen(){
