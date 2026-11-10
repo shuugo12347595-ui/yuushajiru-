@@ -6236,8 +6236,8 @@ async function p4ToThrone(){P3.cut=true;await sc4('L2213');await fadeTo(1,700);s
   await sleep(500);await sc4('L2354',{from:SC4.L2354.findIndex(l=>l[1].startsWith('デスヴァルドが、全魔力を込めた一撃を放った'))+1});
   stopMusic();await flash(2400,'#ffffff');
   const dv=npcById('dv');dv.dir='down';
-  await sc4('L2386',{to:'画面暗転'});await fadeTo(1,800);sfx('slash');await sleep(1600);dv.lying=1;dv.still=1;dv.noblood=1;await fadeTo(0,800);
-  await sc4('L2386',{from:SC4.L2386.findIndex(l=>l[1]==='画面暗転')+1});
+  await sc4('L2386',{to:'画面が戻る'});await fadeTo(1,800);sfx('slash');await sleep(1600);dv.lying=1;dv.still=1;dv.noblood=1;await fadeTo(0,800);
+  await sc4('L2386',{from:SC4.L2386.findIndex(l=>l[1]==='画面が戻る。')+1});
   S.flags.mjil=1;await sc4('L2429',{to:'#battle'});
   await sc4('L2461',{to:'#battle'});saveGame();
   /* 勇者ジル戦（HP10%まで） */
@@ -6421,6 +6421,10 @@ async function p4Eve(){P3.cut=true;F.moving=false;
   if(r.result==='lose'){P3.cut=false;await gameOver();return}
   S.flags.eveDone=1;await say('原罪イブ','……人は……罪を 抱えたまま……それでも……');await say('','原罪イブは 光の 粒に なって 消えていった。\nその 場所に、一振りの 剣が 残されている。');
   p4Give('lsword');sfx('level');await say('','セレス専用の 最強武器「光の剣」を 手に入れた！\n（浄化された勇者の剣より 強い）');saveGame();P3.cut=false;updateHUD()}
+/* 戦闘の 区切り（#battle）が ない 場面に 区切りを 入れる（ないと 戦闘の 前後で 場面が 2回 流れていた） */
+(function(){const ins=(k,after)=>{const L=SC4[k];if(!L||L.some(l=>l[0]==='#battle'))return;const i=L.findIndex(l=>l[1]===after);if(i>=0)L.splice(i+1,0,['#battle','戦闘開始'])};
+  ins('L1481','来るぞ！');ins('L3012','来ます！');ins('L3515','……やっぱり、そうなるか！');
+  const L=SC4.L1567;if(L&&!L.some(l=>l[0]==='#battle')){const i=L.findIndex(l=>l[1]==='撃破後');if(i>=0)L.splice(0,i,['#battle','戦闘開始'])}})();
 
 /* ================= 第四部 ステータスを 上げる 種・木の実（ダンジョンの 宝箱） ================= */
 const SEED4={atk:['力の種','攻撃力'],matk:['魔力の種','魔法攻撃力'],def:['守りの種','防御力'],mhp:['命の木の実','最大HP'],mmp:['不思議な木の実','最大MP']};
