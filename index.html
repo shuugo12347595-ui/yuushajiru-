@@ -6474,7 +6474,7 @@ Object.assign(SKILLS,{
   k_hayate:SK4('kyle',40,'疾風斬り',14,{t:'dash',mult:2.5},'高速 踏み込み斬撃（×2.5）'),
   k_kaeshi:SK4('kyle',45,'返し刃',16,{t:'stance',mult:3.0,parry:1,win:.8},'構えて 攻撃を 受け流し、反撃（×3.0）'),
   k_senpu:SK4('kyle',50,'旋風斬',20,{t:'spin',mult:3.5},'周囲への 回転斬り（×3.5）'),
-  k_tenjin:SK4('kyle',55,'居合・天神無双',80,{t:'stance',tenjin:1,win:1},'1秒 構え、その間に 受けた ダメージ×2＋刀の攻撃力×1.5で 敵 全体に 反撃して よろけさせる。成功すると 最大HPの 50%回復・SP+50・20秒間 攻撃+10%。敵の 防御を 無視（SP80）'),
+  k_tenjin:SK4('kyle',55,'居合・天神無双',80,{t:'stance',tenjin:1,win:1},'1秒 構え、その間に 来た 攻撃を ダメージを 受けずに 見切り、その ダメージ×2＋刀の攻撃力×1.5で 敵 全体に 反撃して よろけさせる。成功すると 最大HPの 50%回復・SP+50・20秒間 攻撃+10%。敵の 防御を 無視（SP80）'),
   k_hien:SK4('kyle',60,'飛燕連斬',26,{t:'multi',mult:5.0,hits:3,gap:.1},'高速3連撃（合計×5.0）'),
   k_zantetsu:SK4('kyle',65,'斬鉄',22,{t:'buff',buff:'p4zantetsu',dur:8},'8秒間、敵の 防御力を 30%無視'),
   k_muei:SK4('kyle',70,'無影斬',32,{t:'rush',mult:6.0,behind:1},'敵の 背後へ 移動して 斬撃（×6.0）'),
@@ -6550,7 +6550,7 @@ p4Magic2=(base=>function(){if(curK()==='kyle')return;return base()})(p4Magic2);
     resolveEnemyHit(e);return}
   return base(p)}}
 /* 居合・天神無双：構えの 間に 受けた 攻撃（物理・魔法）の ダメージを 受け、その×2＋刀の攻撃力×1.5で 敵 全体に 反撃（防御無視・上限9999）。成功したら 最大HPの 50%回復・SP+50・20秒間 攻撃力+10%（ユーザー指定） */
-function p4Tenjin(e,magic){const b=BS,pl=b.pl,A=ACT();const D=Math.max(1,calcEnemyDmg(e,magic));takeDamage(D);sfx('hurt');afterPlayerDamage();if(A.hp<=0||b.ended)return;
+function p4Tenjin(e,magic){const b=BS,pl=b.pl,A=ACT();const D=Math.max(1,calcEnemyDmg(e,magic));popup(pl.pos,'見切り！','g');/* カウンター成功時は ダメージを 受けない（ユーザー指定）。反撃は 受ける はずだった ダメージで 計算 */if(b.ended)return;
   const g=p4Gear(A),blade=(GEAR4[g.wpn]||{}).atk||0;const v=Math.round(D*2+blade*1.5);
   sfx('parry');flash(160,'#ffffff');b.hitstop=.2;slashFx(pl.pos,angTo(pl.pos,e.pos),true,'#ffffff',2.2);ringFx(pl.pos,'#ffffff',9,.5);
   for(const t of b.enemies.filter(x=>!x.dead)){slashFx(t.pos,angTo(pl.pos,t.pos),true,'#ffffff',1.6);P4.raw4=Math.max(1,v);damageEnemy(t,1,'skill');if(!t.dead){hideTele(t);t.state='stagger';t.st=0;t.chain=0;t.nextSub=null;t.queue4=null}}P4.raw4=null;banner('居合・天神無双',1100);popup(pl.pos,'全体 よろけ！','g');pl.state='idle';pl.st=0;pl.vel=V3();
@@ -6728,8 +6728,7 @@ for(const k of['d_shade','d_wolf','d_mage','d_knight','orphegot'])if(EDEF[k])EDE
 for(const k of['i_wolf','s_spirit','i_mage','s_golem','i_golem','e_soldier','e_cannon','e_beast','e_golem','ejil7','colossus','barbatos','warden','unicorn','annihil','kishin','fjil','mjil','eve']){const d=EDEF[k];if(!d)continue;d.hp*=4;for(const f of d.forms||[])if(f.hp)f.hp*=4}
 if(EDEF.orphegot)for(const f of EDEF.orphegot.forms||[])if(f.hp)f.hp*=3;
 /* （v82の 攻撃頻度・攻撃力 2倍、群れ +2体、同時攻撃 上限なしは もとに 戻した（ユーザー指定）。HPの 3倍・4倍は そのまま） */
-/* 魔王領より あとの 敵・ボスの 攻撃力は 1.5倍（ユーザー指定）。受ける ダメージの 上限も 1.5倍に して、実際の ダメージも 1.5倍に なるように */
-for(const k of['d_shade','d_wolf','d_mage','d_knight','orphegot','i_wolf','s_spirit','i_mage','s_golem','i_golem','e_soldier','e_cannon','e_beast','e_golem','ejil7','colossus','barbatos','warden','unicorn','annihil','kishin','fjil','mjil','eve']){const d=EDEF[k];if(!d)continue;d.atk=Math.round(d.atk*1.5);d.capMul=(d.capMul||1)*1.5;for(const f of d.forms||[])if(f.atk)f.atk=Math.round(f.atk*1.5)}
+/* （v85の 攻撃力 1.5倍は もとに 戻した（ユーザー指定）） */
 
 /* ================= TITLE / BOOT ================= */
 async function titleScreen(){
