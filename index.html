@@ -6242,9 +6242,11 @@ async function p4ToThrone(){P3.cut=true;await sc4('L2213');await fadeTo(1,700);s
   await sc4('L2461',{to:'#battle'});saveGame();
   await p4ThroneBattle()}
 /* 勇者ジル戦（HP10%まで）。負けて ロードしたら 魔王の間から ここだけ やり直す */
-async function p4ThroneBattle(){P3.cut=true;$('#hud').hidden=true;
+async function p4ThroneBattle(retry){P3.cut=true;$('#hud').hidden=true;
+  /* やり直しの ときは ジルの HPを 75%に 減らし、1回目の 会話の ところから 始める（ユーザー指定） */
+  if(retry)setTimeout(()=>{const b=BS,e=b&&b.enemies&&b.enemies[0];if(!e||e.type!=='ejil7')return;e.hp=Math.round(e.mhp*.75);p4Talk(lines4('L2494'))},1700);
   const r=await doBattle({enemies:['ejil7'],bg:'throne',noEscape:true,music:'jil1',title:'BOSS：勇者ジル',
-    p4b:{at:[{f:.75,run:async()=>{await p4Talk(lines4('L2494'))}},{f:.5,run:async()=>{await p4Talk(lines4('L2524'))}},{f:.25,run:async()=>{await p4Talk(lines4('L2559'))}}],
+    p4b:{at:[{f:.75,done:retry?1:0,run:async()=>{await p4Talk(lines4('L2494'))}},{f:.5,run:async()=>{await p4Talk(lines4('L2524'))}},{f:.25,run:async()=>{await p4Talk(lines4('L2559'))}}],
       onFloor:async e=>{const b=BS;b.ended=true;hideTele(e);await sleep(300);await endBattle('event')}},onStart:e=>{}});
   if(r.result==='lose'){$('#hud').hidden=false;P3.cut=false;await gameOver();return}
   await sc4('L2592');await sc4('L2637');sfx('chest');await say('','重要アイテム「魔王の勇者の剣」を 手に入れた。');
@@ -6304,9 +6306,12 @@ function purifyGame(){return new Promise(res=>{
 
 /* 魔王の間で 記録した あとに 負けた ときは、ロード後に 勇者ジル戦だけ やり直す（ユーザー指摘：やられたら 進めなかった） */
 {const base=applySave;applySave=function(sv){const r=base(sv);try{if(isP4()&&S.step===117&&S.map==='mthrone'&&S.flags.mjil){F.npcs=[];npcSet([{id:'dv',spr:'deathvald',x:9,y:5,dir:'down',lying:1,still:1,noblood:1},{id:'jl',spr:'jil',x:9,y:8,dir:'down'},{id:'ky',spr:'kyle',x:10,y:13,dir:'up'}]);
-  P4.throneRetry=1;const go=()=>{if(!P4.throneRetry)return;if(P4.inGO||uiStack.length||mode!=='field'){setTimeout(go,200);return}P4.throneRetry=0;run(async()=>{await say(J_('戦闘'),'……まだ 来るのか');await p4ThroneBattle()})};setTimeout(go,600)}}catch(e){console.error(e)}return r}}
+  P4.throneRetry=1;const go=()=>{if(!P4.throneRetry)return;if(P4.inGO||uiStack.length||mode!=='field'){setTimeout(go,200);return}P4.throneRetry=0;run(async()=>{await say(J_('戦闘'),'……まだ 来るのか');await p4ThroneBattle(true)})};setTimeout(go,600)}}catch(e){console.error(e)}return r}}
 /* 全滅の 画面（「最後に 記録した場所から やり直します」）が 閉じてから 戦闘を 始める（重なって 止まっていた） */
-{const base=gameOver;gameOver=async function(){P4.inGO=1;try{return await base()}finally{P4.inGO=0}}}
+{const base=gameOver;gameOver=async function(){P4.inGO=1;try{
+  /* 魔王の間の ジル戦で 負けた ときは「レベルを 上げよう」の 案内を 出さない（その場で やり直す ため） */
+  const sv=isP4()&&loadSave();if(sv&&sv.S&&sv.S.flags&&sv.S.flags.p4&&sv.S.step===117&&sv.S.map==='mthrone'&&sv.S.flags.mjil){await fadeTo(1,600);stopMusic();await narrate(['セレスは 全滅した……'],1800);applySave(sv);updateHUD();await fadeTo(0,500);return}
+  return await base()}finally{P4.inGO=0}}}
 
 /* ================= 第四部 第九章〜最終章・裏ボス ================= */
 Object.assign(OBJ4,{119:()=>({sfield:'雪原の 北の 聖晶の神殿へ',shr1:S.flags.light4?'奥の 扉へ':'聖晶の 鏡を 回して 光路を つなげ（'+P4MIRROR.filter(Boolean).length+'/3）',shr2:'氷晶の 祭壇を 抜けろ',shr3:S.flags.meteorRec?'最深部へ……':'星辰記録室の 記録装置を 調べよう'})[F.map&&F.map.id]||'聖晶の神殿へ（ノルヴェルト大陸。船で）',
