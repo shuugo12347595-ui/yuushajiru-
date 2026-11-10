@@ -6158,7 +6158,7 @@ async function p4EnterLabyrinth(){P3.cut=true;if(!S.flags.lab4){S.flags.lab4=1;a
   P3.cut=false;updateHUD()}
 async function p4Runaway(){P3.cut=true;F.moving=false;await sc4('L1543');saveGame();await sc4('L1567',{to:'#battle'});
   const r=await doBattle({enemies:['runaway'],bg:'factory',noEscape:true,music:'midboss',title:'MID BOSS：暴走機兵'});if(r.result==='lose'){P3.cut=false;await gameOver();return}
-  S.flags.runaway=1;await sc4('L1567',{from:SC4.L1567.findIndex(l=>l[0]==='#battle')+1});p4Give('kikou');sfx('chest');await say('','装備入手：機鋼剣！\n（カイルの 攻撃力+45）');
+  S.flags.runaway=1;await sc4('L1567',{from:SC4.L1567.findIndex(l=>l[0]==='#battle')+1});
   await sc4('L1615');saveGame();P3.cut=false;updateHUD()}
 async function p4Guardian(){P3.cut=true;F.moving=false;await sc4('L1732');saveGame();await sc4('L1763',{to:'#battle'});
   const r=await doBattle({enemies:['guardian4'],bg:'factory',noEscape:true,music:'midboss',title:'BOSS：古代守護機兵',
@@ -6167,6 +6167,13 @@ async function p4Guardian(){P3.cut=true;F.moving=false;await sc4('L1732');saveGa
   await sc4('L1803');await sc4('L1820');sfx('chest');await say('','重要アイテム「勇者の剣の古代記録」を 手に入れた！');
   await fadeTo(1,900);F.time='dusk';loadMap('gardia',15,8,'down');await fadeTo(0,900);await sc4('L1868');
   setStep(116);p4Open('maouryo');saveGame();P3.cut=false;updateHUD()}
+
+/* 工業施設の 刀（機鋼剣）の イベントは なし（ユーザー指定）：手に入れる 場面と、それに 触れる セリフを 消す */
+(function(){const cut=(k,from,n,expect)=>{const a=SC4[k];if(a&&a[from]&&String(a[from][1]).includes(expect))a.splice(from,n)};
+  cut('L1567',19,15,'保管箱');cut('L1669',7,4,'機鋼剣');cut('L1615',3,2,'さっき手に入れた剣');
+  const rep={'……お互い、いい武器が手に入ったな':'……いい杖が手に入ったな','中ボス「暴走機兵」を撃破し、セレスとカイルの新武器を入手した。':'中ボス「暴走機兵」を撃破し、セレスの新しい杖を入手した。'};
+  for(const k of['L1615','L1669'])for(const x of SC4[k]||[]){if(rep[x[1]])x[1]=rep[x[1]];if(typeof x[1]==='string')x[1]=x[1].replace('新武器を使った戦闘。','')}
+  const l=SC4.L1763&&SC4.L1763[23];if(l&&l[1]==='カイルが機鋼剣を構える。')l[1]='カイルが刀を構える。'})();
 
 /* ================= 第四部 第七章「黒の渦城」・第八章「白き剣、黒き剣」 ================= */
 Object.assign(OBJ4,{116:'魔王領へ（帝都の 船着き場から 船で）',117:'黒の回廊を 抜け、階段の 先の 戦闘音を 確かめろ',118:'古代工業施設の 中央鍛造炉へ（剣を 元に 戻す 方法を 探す）'});
