@@ -6638,6 +6638,15 @@ function ult4Hud(){const btn=document.querySelector('#touch-battle .skl');if(!bt
 /* Lv100に なったら 解放の お知らせ */
 {const base=winSeq;winSeq=async function(){const before={};if(isP4())for(const k of partyList())before[k]=actorOf(k).lv;await base();
   if(isP4())for(const k of partyList()){const a=actorOf(k);if(before[k]<100&&a.lv>=100&&ULT4[k]){sfx('level');await say('',`${a.name}の 究極スキル「${SKILLS[ULT4[k]].name}」が 解放された！\n（戦闘中に SPを 100に して、ダメージを 受けると スキルボタンの 周りに 金色の バーが たまる。一周したら スキルボタンで 放てる）`)}}}}
+/* 究極スキルの バー（ユーザー指定）：ダメージを 受けたとき（今まで通り）＋ ジャストガード・ジャスト回避で 20% ＋ 敵に ダメージを 当てるたびに 10%。SP100・Lv100の 条件は 同じ */
+function ug4Add(v){const b=BS;if(!isP4()||!b||b.pl.ult4)return;const k=curK();if(!(ULT4[k]&&ult4Learned(k)&&P.sp>=100))return;const u=ug4();const was=u[k]||0;u[k]=Math.min(1,was+v);
+  if(was<1&&u[k]>=1){banner('究極スキル 解放！ スキルボタンで 放て',1600);sfx('level');ringFx(b.pl.pos,'#ffd700',3,.5)}}
+{const base=parry;parry=function(e){const r=base(e);ug4Add(.2);return r}}
+{const base=justDodge;justDodge=function(e){const r=base(e);ug4Add(.2);return r}}
+{const base=damageEnemy;damageEnemy=function(e,mult,kind,fixed,ign){const h0=e&&e.hp;const r=base(e,mult,kind,fixed,ign);if(isP4()&&e&&e.hp<h0)ug4Add(.1);return r}}
+/* カイルの 究極スキルは MPを 使わない（ユーザー指定） */
+{const base=fireUlt4;fireUlt4=function(k){if(k!=='kyle')return base(k);const a=ACT(),mp=a.mp;a.mp=Math.max(1,mp);try{return base(k)}finally{a.mp=mp}}}
+SKILLS.k_tendan.desc='15連撃（1撃 必ず 9999・合計 149,985）。単体。MPは 使わない。連撃が 終わるまで 完全無敵';
 
 /* ================= デバッグルーム（ユーザー指定） =================
    入り方：フィールドの どこでも、上→右→下→左 を 3周（12回）押してから A。
