@@ -5776,9 +5776,12 @@ async function p4Final(){P3.cut=true;F.moving=false;$('#obj').style.visibility='
   await sc4('L3761',{to:'#bgm'});AU.cur=null;playMusic('maoujil');await collide4();stopMusic();
   /* ジルは ここで 倒れる。気がつくと メテオが 発動していた（ユーザー指定）。メテオの 間の 曲は バニカのテーマ */
   await sc4('L3782',{to:'……ジルは、もう動かなかった。'});{const n=npcById('jl');if(n){n.lying=1;n.still=1;n.noblood=1}sfx('hit');F.shake=.2}
-  await sc4('L3782',{from:SC4.L3782.findIndex(l=>l[1].includes('……ジルは、もう動かなかった。')),to:'天井の向こう。'});await redSky4();AU.cur=null;playMusic('banica');P4.meteorBgm=1;
-  await sc4('L3782',{from:SC4.L3782.findIndex(l=>l[1]==='天井の向こう。')});
-  setStep(123);saveGame();await fadeTo(1,1000);await fadeTo(0,800);if(AU.cur!=='banica'){AU.cur=null;playMusic('banica')}
+  await sc4('L3782',{from:SC4.L3782.findIndex(l=>l[1].includes('……ジルは、もう動かなかった。')),to:'その時。'});await redSky4();AU.cur=null;playMusic('banica');P4.meteorBgm=1;
+  await sc4('L3782',{from:SC4.L3782.findIndex(l=>l[1]==='その時。')});
+  setStep(123);saveGame();await p4FinalRest()}
+/* メテオ発動の あと〜エンディング（ここから セーブを 読み込んでも 続きが 始まる） */
+async function p4FinalRest(){P3.cut=true;F.moving=false;$('#obj').style.visibility='hidden';P4.meteorBgm=1;
+  await fadeTo(1,1000);await fadeTo(0,800);if(AU.cur!=='banica'){AU.cur=null;playMusic('banica')}
   await sc4('L3820');await sc4('L3827');
   await fadeTo(1,800);loadMap('elem4',10,10,'up');F.npcs=[];await fadeTo(0,800);
   await sc4('L3854');
@@ -5790,7 +5793,7 @@ async function p4Final(){P3.cut=true;F.moving=false;$('#obj').style.visibility='
   if(AU.cur!=='banica'){AU.cur=null;playMusic('banica')}await sc4('L3956',{to:'#battle'});
   let ok=false;while(!ok){ok=await meteorGame();if(!ok)await say('','光が 揺らいだ……！ もう一度！')}
   await sc4('L3971',{to:'画面全体が白く染まる'});await meteorBreak4();P4.meteorBgm=0;stopMusic();
-  await sc4('L3995');/* セレスと ジルの 会話（L4019）は なし（ユーザー指定） */
+  await sc4('L3995');AU.cur=null;playMusic('banica');await sc4('L4019');stopMusic();
   /* ---- ムービー：三つの 謝罪 ---- */
   await apologies4();
   /* 新しい 勇者 */
@@ -5889,17 +5892,20 @@ async function credits4(){const W=document.createElement('div');W.style.cssText=
   cap.style.bottom='45%';cap.style.fontSize='26px';cap.textContent='勇者ジル';await sleep(2400);cap.innerHTML='勇者ジル<br><span style="font-size:15px">― Jiru of Hero ―</span>';await sleep(3200);cap.innerHTML='THE END';await sleep(4000);
   stopMusic();W.remove()}
 
-/* ---- 最終章の 台本の 修正（ユーザー指定）：ジルは 光の 衝突の あと すぐ 倒れる。セレスと ジルの 会話は なし ---- */
-SC4.L3782=[['#bgm','BGM：停止'],['','光が消える。'],['','広間は静まり返っていた。'],['','セレスとカイルは、膝をついている。'],['','その前方。'],['','ジルが、剣を床に突き立てていた。'],
-  ['','ジルの体から、魔力の光が少しずつ消えていく。'],['','ジルの体が、ゆっくりと崩れ落ちた。'],['','……ジルは、もう動かなかった。'],['','短い沈黙。'],
-  ['','天井の向こう。'],['','空に、赤い光が現れる。'],['カイル','……何だ、あれは……'],['','セレスが空を見上げる。'],['','赤い光は、ゆっくりと大きくなっていた。'],['セレス','……そんな……'],['','メテオは、すでに発動していた。']];
-SC4.L3827=SC4.L3827.filter((l,i)=>[0,1,2,5,10,11,12,13,14,15,16].includes(i));SC4.L3827[0]=['#bgm','BGM：バニカのテーマ'];
-SC4.L3854=SC4.L3854.filter(l=>!l[1].includes('ジルは最上階に残ったまま'));
-SC4.L3928=[['#bgm','BGM：バニカのテーマ'],['','セレスとカイルが最上階へ戻る。'],['','巨大な赤い星が、雲を照らしている。'],['セレス','……間に合わせます'],['','カイルが隣に立つ。'],['カイル','……俺も手伝う'],['セレス','……ありがとうございます']];
-SC4.L3995=SC4.L3995.slice(0,15);
+/* ---- 最終章の 台本の 修正（ユーザー指定）----
+   ジルは 光の 衝突の あと すぐ 倒れる（気がつくと メテオが 発動していた）。消すのは ジルの セリフと、倒れた ジルが 動く 地の文だけ。
+   セレス・カイルの セリフと ほかの 地の文は すべて 残す */
+{const JDEAD={L3782:[10,16,19,23,31],L3827:[3,9,17],L3854:[2],L3928:[2,6,10,17],L3995:[15,20],L4019:[1,5,8,15,18,22]};
+  for(const k in JDEAD){const L=SC4[k];if(!L)continue;SC4[k]=L.filter((l,i)=>!/^ジル/.test(l[0])&&!JDEAD[k].includes(i))}
+  const L=SC4.L3782;const at=L.findIndex(l=>l[1].includes('ジルの体から、魔力の光'));
+  const sd=L.findIndex(l=>l[0]==='セレス'&&l[1]==='……そんな……');if(sd>=0)L.splice(sd+1,0,['','メテオは、すでに発動していた。']);
+  if(at>=0)L.splice(at+1,0,['','ジルの体が、ゆっくりと崩れ落ちた。'],['','……ジルは、もう動かなかった。']);
+  const sky=L.findIndex(l=>l[1]==='天井の向こう。');if(sky>=0)L.splice(sky,0,['','その時。'])}
 /* メテオが 見えてから 破壊するまでは、場面が 変わっても バニカのテーマを 流し続ける */
 {const base=playMusic;playMusic=function(n){if(isP4()&&P4.meteorBgm){if(AU.cur==='banica'&&n!=='banica')return;if(n!=='banica')n='banica';if(AU.cur==='banica')return}return base(n)}}
 {const base=stopMusic;stopMusic=function(){if(isP4()&&P4.meteorBgm)return;return base.apply(this,arguments)}}
+/* 第123段階（メテオ発動後）の セーブを 読み込んだら、続きから 始める */
+{const base=applySave;applySave=function(sv){const r=base(sv);try{if(isP4()&&S.step===123){const go=()=>{if(uiStack.length||mode!=='field'||busy){setTimeout(go,300);return}run(async()=>{loadMap('etop',10,10,'up');npcSet([{id:'jl',spr:'jil',x:13,y:6,dir:'left',lying:1,still:1,noblood:1}]);AU.cur=null;playMusic('banica');await p4FinalRest()})};setTimeout(go,600)}}catch(e){console.error(e)}return r}}
 
 /* ================= 第四部 第一章〜第五章 ================= */
 const C4=(ex='通常')=>C_(ex);
