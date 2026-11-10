@@ -5907,7 +5907,8 @@ Object.assign(OBJ4,{100:'……',101:'バニカの 墓へ',102:'ノルヴェル�
 const STEP4=[];
 STEP4.push((m,x,y,t,s)=>{
   if(m.id==='ntown'&&y>=m.h-1&&s===102){run(()=>p4ToRieve());return 1}
-  if(m.id==='ntown'&&y>=m.h-1){run(async()=>{const j=await selectList({title:'王都を 出る？',items:[{label:'墓地へ'},{label:'船に 乗る'},{label:'やめる'}]});if(j===0)await goMap('ngrave',7,8,'up');else if(j===1)await p4Travel(false);else{F.py-=1}});return 1}
+  if(m.id==='ntown'&&y>=m.h-1){run(async()=>{/* 雪原（ノルヴェルト大陸の フィールド）が 開いていれば 歩いて 出られる */const sf=!!(S.flags.dest4&&S.flags.dest4.sfield);const L=[...(sf?[{label:'フィールドへ 出る',sub:'ノルヴェルト雪原'}]:[]),{label:'墓地へ'},{label:'船に 乗る'},{label:'やめる'}];const r=await selectList({title:'王都を 出る？',items:L});const j=(r==null||r<0)?9:r-(sf?1:0);
+    if(j===-1)await goMap('sfield',15,23,'up');else if(j===0)await goMap('ngrave',7,8,'up');else if(j===1)await p4Travel(false);else{F.py-=1}});return 1}
   if(m.id==='ngrave'&&y>=m.h-1&&s>=102){run(()=>goMap('ntown',16,21,'up'));return 1}
   if(m.id==='rieve'&&y>=m.h-1&&s===103){if(S.flags.p4mother){run(()=>goMap('world',6,13,'down'));return 1}run(async()=>{await say(C4(),'……まだ、ジルさんの お母さんに 会っていない。');F.py-=1});return 1}
   if(m.id==='rieve'&&y>=m.h-1&&s>103){run(async()=>{const j=await selectList({title:'どうする？',items:[{label:'フィールドへ 出る'},{label:'船で 移動する'},{label:'やめる'}]});if(j===0)await goMap('world',6,13,'down');else if(j===1)await p4Travel(false);else F.py-=1});return 1}
@@ -6339,7 +6340,7 @@ Object.assign(OBJ4,{119:()=>({sfield:'雪原の 北の 聖晶の神殿へ',shr1:
 {const base=tileAt;tileAt=function(x,y){const t=base(x,y);if(t==='凍'&&isP4()&&S.flags.freeze4)return '氷';return t}}
 STEP4.push((m,x,y,t,s)=>{
   /* 第九章 */
-  if(m.id==='sfield'&&y>=m.h-1){run(()=>p4Travel(false));return 1}
+  if(m.id==='sfield'&&y>=m.h-1){run(async()=>{const j=await selectList({title:'どうする？',items:[{label:'王都へ 戻る',sub:'ノルヴェルト王都'},{label:'船で 移動する'},{label:'やめる'}]});if(j===0)await goMap('ntown',16,21,'up');else if(j===1)await p4Travel(false);else F.py-=1});return 1}
   if(m.id==='sfield'&&s===119&&!S.flags.sf4){S.flags.sf4=1;run(async()=>{P3.cut=true;await sc4('L2948');P3.cut=false})}
   if(m.id==='sfield'&&y<=3&&x===15){run(async()=>{if(!S.flags.shr4){S.flags.shr4=1;P3.cut=true;await sc4('L2969');P3.cut=false}await goMap('shr1',14,19,'up');if(!S.flags.shr4b){S.flags.shr4b=1;P3.cut=true;await sc4('L2986');P3.cut=false}});return 1}
   if(m.id==='shr1'&&t==='<'){run(()=>goMap('sfield',15,4,'down'));return 1}
