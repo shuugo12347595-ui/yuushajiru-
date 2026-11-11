@@ -7082,6 +7082,69 @@ if('serviceWorker' in navigator&&location.protocol==='https:'){try{navigator.ser
 titleScreen();
 window.__dbg={get P(){return P},get S(){return S},F,setStep,loadMap,doBattle,run,press,release,get BS(){return BS},get mode(){return mode},held,get busy(){return busy},goMap,MAPMETA,ESC,get ui(){return uiStack.length},tileAt,solidAt,npcAt,updateHUD};
 
+/* ================= ジル・バニカの 究極スキル（ディスク1・ディスク2の 第三部。第四部は 別） =================
+   解放：Lv100。SPが 100の とき、受けた ダメージ（最大HPの 50%で 一周）・ジャストガード/回避 +20%・攻撃命中 +10% で 金色の バーが たまる。
+   一周したら スキルボタンで 放つ。放っている 間は 完全無敵。
+   ジル「勇者の攻撃」：SPを すべて使い、味方 全員の HPを 最大の 50% 回復。そのまま 15連撃（1撃 必ず 9999）。
+   バニカ「天照大炎上」：20回攻撃（敵 全体）。1撃 ＝ 残りMP × 100（最大 9999）。当たった 敵は やけど（毎秒100・10秒）。
+                        MPは 0に なり、技が 終わると 最大MPの 30% 回復。 */
+const ULTJB_ON=()=>!(typeof isP4==='function'&&isP4());
+const ULTJB={jil:{name:'勇者の攻撃',hits:15},banica:{name:'天照大炎上',hits:20}};
+function ujbLearned(k){const a=actorOf(k);return !!(a&&a.lv>=100)}
+function ujb(){const b=BS;b.ujb=b.ujb||{};return b.ujb}
+function ujbAdd(v){const b=BS;if(!ULTJB_ON()||!b||!b.pl||b.pl.ujb)return;const k=curK();if(!(ULTJB[k]&&ujbLearned(k)&&P.sp>=100))return;const u=ujb();const was=u[k]||0;u[k]=Math.min(1,was+v);
+  if(was<1&&u[k]>=1){banner('究極スキル 解放！ スキルボタンで 放て',1600);sfx('level');ringFx(b.pl.pos,'#ffd700',3,.5)}}
+const ujbReady=()=>{if(!ULTJB_ON()||!BS)return false;const k=curK();return !!(ULTJB[k]&&ujbLearned(k)&&P.sp>=100&&(ujb()[k]||0)>=1)};
+/* 受けた ダメージ・ジャスト・命中で バー。究極スキル中は 無敵 */
+{const base=takeDamage;takeDamage=function(dmg){const b=BS;if(ULTJB_ON()&&b&&b.pl&&b.pl.ujb){popup(b.pl.pos,'無敵','g');return 0}const r=base(dmg);if(ULTJB_ON()&&b&&r>0){const a=ACT();ujbAdd(r/(a.mhp*.5))}return r}}
+{const base=hurtPlayer;hurtPlayer=function(e){if(ULTJB_ON()&&BS&&BS.pl&&BS.pl.ujb){popup(BS.pl.pos,'無敵','g');return}return base(e)}}
+{const base=resolveEnemyHit;resolveEnemyHit=function(e){if(ULTJB_ON()&&BS&&BS.pl&&BS.pl.ujb){popup(BS.pl.pos,'無敵','g');return}return base(e)}}
+{const base=parry;parry=function(e){const r=base(e);ujbAdd(.2);return r}}
+{const base=justDodge;justDodge=function(e){const r=base(e);ujbAdd(.2);return r}}
+{const base=damageEnemy;damageEnemy=function(e,mult,kind,fixed,ign){const h0=e&&e.hp;const r=base(e,mult,kind,fixed,ign);if(ULTJB_ON()&&e&&e.hp<h0&&kind!=='burn'&&!(BS&&BS.pl&&BS.pl.ujb))ujbAdd(.1);return r}}
+/* スキルボタン（ジル）／魔法切替（バニカ）を 押した とき、バーが 一周して いれば 究極スキル */
+{const base=startSkill;startSkill=function(){if(ujbReady())return fireUjb(curK());return base()}}
+{const base=cycleSlot;cycleSlot=function(){if(ujbReady()&&curK()==='banica')return fireUjb('banica');return base.apply(this,arguments)}}
+function fireUjb(k){const b=BS,pl=b.pl,a=ACT(),U=ULTJB[k];ujb()[k]=0;P.sp=0;
+  pl.ujb={k,t:0,n:0,tg:nearestEnemy(pl.pos,30),dmg:0};pl.state='ujb';pl.st=0;
+  banner(U.name,1800);sfx('skill');flash(260,k==='banica'?'#ffd0a0':'#fff4c0');ringFx(pl.pos,k==='banica'?'#ff6a20':'#ffd700',4.5,.7);b.shake=.4;
+  if(k==='jil'){for(const p of b.party){if(p.a.hp>0){const h=Math.round(p.a.mhp*.5);p.a.hp=Math.min(p.a.mhp,p.a.hp+h)}}popup(pl.pos,'全員 回復','h');sfx('heal')}
+  if(k==='banica'){pl.ujb.dmg=Math.min(9999,Math.max(0,a.mp)*100);a.mp=0}
+  if(typeof updateHUD==='function')updateHUD()}
+/* やけど（毎秒100） */
+function ujbBurnTick(b,dt){for(const e of b.enemies){if(e.dead||!(e.burnT>0))continue;e.burnT-=dt;e.burnAcc=(e.burnAcc||0)+dt;
+  if(e.burnAcc>=1){e.burnAcc-=1;damageEnemy(e,0,'burn',100);if(!e.dead)burst(e.pos.clone().add(V3(0,1,0)),'#ff6a20',4,2,.2)}}}
+{const base=updatePlayer;updatePlayer=function(dt){const b=BS;if(!ULTJB_ON()||!b)return base(dt);ujbBurnTick(b,dt);const pl=b.pl,U=pl.ujb;ujbHud();
+  if(!U)return base(dt);
+  pl.state='ujb';U.t+=dt;const T=U.t;const hits=ULTJB[U.k].hits;
+  if(U.k==='jil'){let tg=U.tg;if(!tg||tg.dead)tg=U.tg=nearestEnemy(pl.pos,30);
+    if(!tg){U.end=1}else{const at=.55+U.n*.09;
+      if(T<.55){if(Math.random()<.6)burst(pl.pos.clone().add(V3(0,1,0)),'#ffd700',2,2,.08)}
+      else if(U.n<hits&&T>=at){const a=(U.n*2.399)%(Math.PI*2);pl.pos.set(tg.pos.x+Math.sin(a)*(1.3+tg.d.r),0,tg.pos.z+Math.cos(a)*(1.3+tg.d.r));pl.face=angTo(pl.pos,tg.pos);
+        const last=U.n===hits-1;slashFx(pl.pos,pl.face+(U.n%2?.6:-.6),last,last?'#ffffff':'#ffd700',last?2.4:1.3);sfx('slash');trailFx('#ffd700');
+        if(!tg.dead)damageEnemy(tg,1,'skill+',9999);U.n++;b.hitstop=last?.25:.03;if(last){b.shake=.7;ringFx(tg.pos,'#ffffff',5,.6);burst(tg.pos.clone().add(V3(0,1,0)),'#fff4c0',40,10);sfx('boom')}}
+      if(U.n>=hits&&T>.55+hits*.09+.35)U.end=1}}
+  else{/* バニカ：敵 全体へ 20回の 炎 */const at=.6+U.n*.11;
+    if(T<.6){if(Math.random()<.7)burst(pl.pos.clone().add(V3(0,1.2,0)),'#ff8a30',3,3,.1)}
+    else if(U.n<hits&&T>=at){const last=U.n===hits-1;let any=false;
+      for(const e of b.enemies){if(e.dead)continue;any=true;burst(e.pos.clone().add(V3(rnd(-.5,.5),rnd(.4,1.6),rnd(-.5,.5))),last?'#fff0c0':'#ff5a10',last?30:10,last?8:4,.3);
+        damageEnemy(e,0,'magic',Math.max(1,U.dmg));if(!e.dead){e.burnT=10;e.burnAcc=e.burnAcc||0}}
+      sfx(last?'boom':'hit');b.shake=last?.6:.12;U.n++;if(last)flash(240,'#ffb070');if(!any)U.end=1}
+    if(U.n>=hits&&T>.6+hits*.11+.4)U.end=1}
+  if(U.end){if(U.k==='banica'){const a=actorOf('banica');a.mp=Math.min(a.mmp,a.mp+Math.round(a.mmp*.3));popup(pl.pos,'MP 30% 回復','h')}pl.ujb=null;pl.state='idle';pl.st=0;if(typeof updateHUD==='function')updateHUD()}}}
+/* 金色の バー（スキルボタンの 周り） */
+(function(){const st=document.createElement('style');st.textContent=`#touch-battle .skl .ugj{position:absolute;inset:-6px;border-radius:50%;pointer-events:none;background:conic-gradient(#ffd700 calc(var(--ug,0)*1turn),rgba(255,215,0,.15) 0);-webkit-mask:radial-gradient(circle,transparent 58%,#000 60%);mask:radial-gradient(circle,transparent 58%,#000 60%);opacity:0;transition:opacity .3s}
+  #touch-battle .skl.ugjon .ugj{opacity:1}#touch-battle .skl.ujb{background:radial-gradient(#fff4c0,#d4a017)!important;color:#3a2600!important;box-shadow:0 0 14px #ffd700;font-weight:bold;font-size:11px}`;document.head.appendChild(st)})();
+function ujbHud(){const btn=document.querySelector('#touch-battle .skl');if(!btn)return;let r=btn.querySelector('.ugj');if(!r){r=document.createElement('div');r.className='ugj';btn.appendChild(r)}
+  const b=BS;if(!b||!ULTJB_ON()){btn.classList.remove('ugjon','ujb');return}const k=curK(),u=ujb()[k]||0;const on=ULTJB[k]&&ujbLearned(k)&&P.sp>=100;
+  btn.classList.toggle('ugjon',!!on);btn.style.setProperty('--ug',u);const ready=on&&u>=1;btn.classList.toggle('ujb',!!ready);
+  if(btn.firstChild&&btn.firstChild.nodeType===3){if(!btn.dataset.lab0)btn.dataset.lab0=btn.firstChild.nodeValue;const lab=ready?ULTJB[k].name:btn.dataset.lab0;if(btn.firstChild.nodeValue!==lab)btn.firstChild.nodeValue=lab}}
+{const base=endBattle;endBattle=async function(r){const btn=document.querySelector('#touch-battle .skl');if(btn){btn.classList.remove('ugjon','ujb');if(btn.dataset.lab0&&btn.firstChild&&btn.firstChild.nodeType===3)btn.firstChild.nodeValue=btn.dataset.lab0}
+  if(BS&&BS.pl&&BS.pl.ujb){if(BS.pl.ujb.k==='banica'){const a=actorOf('banica');a.mp=Math.min(a.mmp,a.mp+Math.round(a.mmp*.3))}BS.pl.ujb=null}return base(r)}}
+/* Lv100に なったら お知らせ */
+{const base=winSeq;winSeq=async function(){const before={};const on=ULTJB_ON();if(on)for(const k of partyList())before[k]=actorOf(k).lv;await base();
+  if(on)for(const k of partyList()){const a=actorOf(k);if(ULTJB[k]&&before[k]<100&&a.lv>=100){sfx('level');await say('',`${a.name||'ジル'}の 究極スキル「${ULTJB[k].name}」が 解放された！\n（戦闘中に SPを 100に して、ダメージを 受けたり、ジャストガード・ジャスト回避・攻撃を 当てると スキルボタンの 周りに 金色の バーが たまる。一周したら スキルボタンで 放てる）`)}}}}
+
 /* 右上の ステータス：タップで しまう／「▼ ステータス」で 出す。設定は この端末に 覚える */
 (function(){const st=document.getElementById('stat'),tab=document.getElementById('statTab');let off=false;try{off=localStorage.getItem('jil_statOff')==='1'}catch(e){}
   const set=v=>{off=v;st.classList.toggle('off',v);tab.classList.toggle('on',v);try{localStorage.setItem('jil_statOff',v?'1':'0')}catch(e){}};
