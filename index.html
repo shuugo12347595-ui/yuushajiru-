@@ -348,7 +348,7 @@ const SONGS={
 };
 function playMusic(name,opt={}){
   if(AU.cur===name)return;stopMusic();AU.cur=name;if(!name)return;
-  if(BGM_FILES[name]){const a=AU.files&&AU.files[name];if(a&&!AU.muted){if(!opt.resume)a.currentTime=0;a.play().catch(()=>{})}return}
+  if(BGM_FILES[name]){const a=AU.files&&AU.files[name];if(a&&!AU.muted){if(!opt.resume)a.currentTime=0;/* 読み込みに 時間が かかって、止めた あとに 鳴り出すのを 防ぐ */a.play().then(()=>{if(AU.cur!==name){try{a.pause()}catch(e){}}}).catch(()=>{})}return}
   const song=SONGS[name];if(!song||!AU.ctx)return;
   const stepDur=60/song.bpm/2;
   const tracks=song.tracks.map(t=>{const ev=[];for(let i=0;i<t.n.length;i++){const v=t.n[i];if(typeof v==='number'){let l=1;while(t.n[(i+l)%t.n.length]==='-'&&l<t.n.length)l++;ev[i]={m:v,l}}}return{...t,ev,len:t.n.length}});
