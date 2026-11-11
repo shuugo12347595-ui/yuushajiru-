@@ -6015,7 +6015,7 @@ const C4=(ex='通常')=>C_(ex);
     const items=[{label:'つづきから',sub:sv.S.flags.p4?'':'第四部へ'},{label:'引き継ぎコードで はじめる',sub:'第三部から'},{label:'コードなしで はじめる',sub:'第三部から・Lv35'},{label:'そうさ方法'}];
     while(true){const pr=selectList({items,cancel:false,pos:'inline'});host.appendChild(selectList.last);const i=await pr;audioInit();if(i!==3)tryLandscape();
       if(i===3){await showControls();continue}
-      if(i===1||i===2){const c=await selectList({title:'今の セーブデータは、次に セーブしたとき 上書きされます。第三部から はじめますか？',items:[{label:'はじめる'},{label:'やめる'}]});if(c!==0)continue;
+      if(i===1||i===2){/* 確認は タイトルの メニューと 同じ 場所に 出す（タイトル画面の 裏に 隠れないように） */host.innerHTML='';const cp=selectList({title:'今の セーブは 次に セーブしたとき 上書きされます。第三部から はじめますか？',items:[{label:'はじめる'},{label:'やめる'}],cancel:false,pos:'inline'});host.appendChild(selectList.last);const c=await cp;host.innerHTML='';if(c!==0)continue;
         $('#title .sub2').textContent='第三部';document.body.classList.remove('p4');
         if(i===1){const d=await askCarryCode();if(!d)continue;$('#title').hidden=true;applyCarry(d);await p3Opening();return}
         $('#title').hidden=true;applyCarry(null);await p3Opening();return}
