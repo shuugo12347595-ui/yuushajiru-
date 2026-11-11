@@ -552,7 +552,7 @@ function newGame(){document.body.classList.remove('has-magic');document.body.cla
 }
 function migrate(){if(P.magics&&P.magics.includes('fira')){P.magics=P.magics.filter(k=>k!=='fira');if(!P.magics.includes('wind'))P.magics.push('wind');else P.pts=(P.pts||0)+4}if(P.eqMagic==='fira')P.eqMagic='wind';
   for(const key of['skills','magics'])if(P[key]){const T=key==='skills'?SKILLS:MAGICS;P[key]=P[key].filter(k=>{if(T[k])return true;P.pts=(P.pts||0)+(OLD_REFUND[k]||0);return false})}
-  if(P.eqSkill&&!SKILLS[curEqSkill()])P.eqSkill='soukou';if(P.eqMagic&&!MAGICS[P.eqMagic])P.eqMagic=P.magics&&P.magics[0]||null;P.batk=batkFor(P.lv);P.items=Object.assign({herb:0,hiherb:0,ether:0},P.items);S.q=S.q||{};for(const[k,v]of Object.entries({wbag:[],mp:0,mmp:0,pts:0,skills:['soukou'],magics:[],eqSkill:'soukou',eqMagic:null}))if(P[k]===undefined)P[k]=Array.isArray(v)?v.slice():v;S.flags=S.flags||{};document.body.classList.toggle('has-magic',!!S.flags.magicOn)}
+  if(P.eqSkill&&!SKILLS[curEqSkill()])P.eqSkill='soukou';if(P.eqMagic&&!MAGICS[P.eqMagic])P.eqMagic=P.magics&&P.magics[0]||null;P.batk=batkFor(P.lv)+((P.seed&&P.seed.atk)||0);P.items=Object.assign({herb:0,hiherb:0,ether:0},P.items);S.q=S.q||{};for(const[k,v]of Object.entries({wbag:[],mp:0,mmp:0,pts:0,skills:['soukou'],magics:[],eqSkill:'soukou',eqMagic:null}))if(P[k]===undefined)P[k]=Array.isArray(v)?v.slice():v;S.flags=S.flags||{};document.body.classList.toggle('has-magic',!!S.flags.magicOn)}
 const magPow=()=>10+P.lv*3;
 const atkOf=()=>P.batk+WEAPONS[P.weapon].atk;
 const defOf=()=>P.bdef+ARMORS[P.armor].def+SHIELDS[P.shield].def;
@@ -1312,8 +1312,8 @@ async function seaPort(x,y){
 }
 /* ---- 引き継ぎコード（第三部へ） ---- */
 function makeCarryCode(){
-  const pk=k=>{const a=actorOf(k);return a?{lv:a.lv,exp:a.exp,mhp:a.mhp,mmp:a.mmp,def:a.def,pts:a.pts,mg:a.magics,sl:a.slots}:null};
-  const data={v:2,lv:P.lv,exp:P.exp,mhp:P.mhp,mmp:P.mmp,batk:P.batk,bdef:P.bdef,w:P.weapon,wb:P.wbag,ar:P.armor,sh:P.shield,g:P.gold,it:P.items,sk:P.skills,mg:P.magics,es:P.eqSkill,em:P.eqMagic,pts:P.pts,b:pk('banica'),c:pk('celes'),nick:S.flags.nick||'バニカ',chess:!!S.flags.chessWin};
+  const pk=k=>{const a=actorOf(k);return a?{lv:a.lv,exp:a.exp,mhp:a.mhp,mmp:a.mmp,def:a.def,pts:a.pts,mg:a.magics,sl:a.slots,sd:a.seed||null}:null};
+  const data={v:2,lv:P.lv,exp:P.exp,mhp:P.mhp,mmp:P.mmp,batk:P.batk,bdef:P.bdef,w:P.weapon,wb:P.wbag,ar:P.armor,sh:P.shield,g:P.gold,it:P.items,sk:P.skills,mg:P.magics,es:P.eqSkill,em:P.eqMagic,pts:P.pts,b:pk('banica'),c:pk('celes'),nick:S.flags.nick||'バニカ',chess:!!S.flags.chessWin,sd:P.seed||null};
   const json=JSON.stringify(data);const bytes=new TextEncoder().encode(json);let bin='';bytes.forEach(c=>bin+=String.fromCharCode(c));
   let sum=0;for(let i=0;i<json.length;i++)sum=(sum*31+json.charCodeAt(i))>>>0;
   return 'JIL2-'+btoa(bin).replace(/=+$/,'')+'-'+sum.toString(36).toUpperCase();
@@ -2794,7 +2794,7 @@ async function winSeq(){
   const b=BS;await sleep(500);sfx('win');banner('勝利！',1600);stopMusic();await sleep(1200);
   const r=b.results;r.exp=Math.max(1,Math.round(r.exp*EXP_RATE));P.exp+=r.exp;P.gold+=r.gold;
   await say('',`魔物たちを やっつけた！\n${r.exp}ポイントの 経験値と ${r.gold}ゴールドを 手に入れた！`);
-  while(P.lv<100&&P.exp>=expNext()){P.exp-=expNext();P.lv++;const hp=8+Math.floor(Math.random()*4)+(P.lv>=10?3:0),da=batkFor(P.lv)-P.batk,dd=P.lv>=10?2:1;P.mhp+=hp;P.hp+=hp;P.batk+=da;P.bdef+=dd;sfx('level');P.pts+=2;
+  while(P.lv<100&&P.exp>=expNext()){P.exp-=expNext();P.lv++;const hp=8+Math.floor(Math.random()*4)+(P.lv>=10?3:0),da=batkFor(P.lv)+((P.seed&&P.seed.atk)||0)-P.batk,dd=P.lv>=10?2:1;P.mhp+=hp;P.hp+=hp;P.batk+=da;P.bdef+=dd;sfx('level');P.pts+=2;
     if(S.flags.magicOn){P.mmp+=3;P.mp+=3;await say('',`ジルは レベル${P.lv}に あがった！\n最大HP+${hp}　最大MP+3　攻撃力+${da}　守備力+${dd}\nAPを 2 手に入れた！（メニュー →キャラ →習得する）`)}
     else await say('',`ジルは レベル${P.lv}に あがった！\n最大HP+${hp}　攻撃力+${da}　守備力+${dd}`)}
   for(const k of partyList().slice(1)){const a=actorOf(k),M=MEMBERS[k];a.exp+=r.exp;
@@ -3416,7 +3416,7 @@ function applyCarry(d){
   if(!d){d={lv:35,exp:0,mhp:390,mmp:96,batk:batkFor(35),bdef:40,w:'proto',ar:'iron',sh:'iron',g:8000,it:{herb:10,hiherb:6,ether:5,revive:2,panacea:1},sk:Object.keys(SKILLS).filter(k=>k!=='kanshou'),mg:Object.keys(MAGICS),es:'soukou',em:'fire',pts:0,b:null,c:null,nick:'バニカ'}}
   Object.assign(P,{lv:d.lv,exp:d.exp||0,mhp:d.mhp,hp:d.mhp,mmp:d.mmp,mp:d.mmp,batk:d.batk,bdef:d.bdef,weapon:d.w||'father',wbag:d.wb||[],armor:d.ar||'none',shield:d.sh||'none',gold:d.g||0,
     items:Object.assign({herb:0,hiherb:0,ether:0},d.it||{}),skills:d.sk||['soukou'],magics:d.mg||[],eqSkill:d.es||'soukou',eqMagic:d.em||null,pts:d.pts||0});
-  for(const[k,c]of[['banica',d.b],['celes',d.c]]){const a=joinMember(k);if(c)Object.assign(a,{lv:c.lv,exp:c.exp||0,mhp:c.mhp,hp:c.mhp,mmp:c.mmp,mp:c.mmp,def:c.def,pts:c.pts||0,magics:c.mg||a.magics,slots:c.sl||a.slots,sel:0})}
+  P.seed=d.sd||P.seed||undefined;for(const[k,c]of[['banica',d.b],['celes',d.c]]){const a=joinMember(k);if(c)Object.assign(a,{lv:c.lv,exp:c.exp||0,mhp:c.mhp,hp:c.mhp,mmp:c.mmp,mp:c.mmp,def:c.def,pts:c.pts||0,magics:c.mg||a.magics,slots:c.sl||a.slots,sel:0});if(c&&c.sd)a.seed=c.sd}
   Object.assign(S.flags,{magicOn:1,ship:1,worldMap:1,nick:d.nick||'バニカ',chessWin:d.chess?1:0});document.body.classList.add('has-magic');
   if(typeof migrate==='function')migrate();
 }
@@ -7159,6 +7159,11 @@ function capStats1(a){if(!a)return;if(a.mhp>9999)a.mhp=9999;if(a.hp>a.mhp)a.hp=a
 {const base=updateHUD;updateHUD=function(){try{capStats1(P);if(P.party)for(const k in P.party)capStats1(P.party[k])}catch(e){}return base.apply(this,arguments)}}
 /* ジル捕獲の 戦闘（王都の 衛兵）：衛兵の 攻撃は 防御力無視の 即死（ユーザー指定。高レベルでも 必ず 捕まる） */
 {const base=calcEnemyDmg;calcEnemyDmg=function(e,magic){if(BS&&BS.cfg&&BS.cfg.arrest)return 9999999;return base(e,magic)}}
+/* ---- 種の 効果（ディスク1で 食べた 種は ディスク2にも 引き継ぐ。第四部は 別の 仕組み） ---- */
+const SEEDCALC_ON=()=>!(typeof isP4==='function'&&isP4());
+{const base=girlBase;girlBase=function(a){const r=base(a);if(!SEEDCALC_ON()||!a||!a.seed)return r;return r+((a.seed.atk||0)+(a.seed.matk||0))*PLAYER_DMG*.62}}
+{const base=magDmg;magDmg=function(e,id){const r=base(e,id);if(!SEEDCALC_ON())return r;const m=(P.seed&&P.seed.matk)||0;return r+(m?Math.round(m*(MAGICS[id].pow||1)*elemMult(e,MAGICS[id].el)):0)}}
+{const base=calcEnemyDmg;calcEnemyDmg=function(e,magic){const d=base(e,magic);if(!SEEDCALC_ON()||!magic||(BS&&BS.cfg&&BS.cfg.arrest))return d;const a=ACT();const md=(a&&a.seed&&a.seed.mdef)||0;return md?Math.max(1,Math.round(d*100/(100+md))):d}}
 /* 右上の ステータス：タップで しまう／「▼ ステータス」で 出す。設定は この端末に 覚える */
 (function(){const st=document.getElementById('stat'),tab=document.getElementById('statTab');let off=false;try{off=localStorage.getItem('jil_statOff')==='1'}catch(e){}
   const set=v=>{off=v;st.classList.toggle('off',v);tab.classList.toggle('on',v);try{localStorage.setItem('jil_statOff',v?'1':'0')}catch(e){}};
