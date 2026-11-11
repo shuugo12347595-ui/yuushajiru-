@@ -6244,7 +6244,7 @@ STEP4.push((m,x,y,t,s)=>{
   if(m.id==='gardia'&&s===112&&!S.flags.smith4&&x>=3&&x<=9&&y>=4&&y<=9){run(()=>p4Smith());return 1}
   if(m.id==='gardia'&&s===114&&x>=20&&x<=26&&y>=4&&y<=9){run(()=>p4InnNight());return 1}
   if(m.id==='fac1'&&y>=m.h-1){run(()=>goMap('gardia',14,1,'down'));return 1}
-  if(m.id==='fac1'&&t==='>'){if(s<115){run(async()=>{await say(KY_(),'……奥は まだ 動いていないようだな。');F.px-=1});return 1}run(()=>p4EnterLabyrinth());return 1}
+  if(m.id==='fac1'&&t==='>'){if(s<115){run(async()=>{await say(KY_(),'……奥は まだ 動いていないようだな。');/* 昇降装置は 下から 入るので 下へ 戻す（前は 左の 壁の 中に 押し出して 動けなくなっていた） */F.px=x;F.py=y+1;F.dir='down'});return 1}run(()=>p4EnterLabyrinth());return 1}
   if(m.id==='fac2'&&t==='<'){run(()=>goMap('fac1',19,2,'down'));return 1}
   if(m.id==='fac2'&&t==='>'){run(()=>goMap('fac3',14,21,'up'));return 1}
   if(m.id==='fac3'&&t==='<'){run(()=>goMap('fac2',14,1,'down'));return 1}

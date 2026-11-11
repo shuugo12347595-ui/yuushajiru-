@@ -1,6 +1,6 @@
 // 勇者ジル Service Worker：ゲーム本体をキャッシュしてオフラインでも起動できるようにする
 // ファイルを更新したら VERSION の数字を上げると、遊ぶ人の端末にも新しい版が届きます
-const VERSION = 'jil3-v125';
+const VERSION = 'jil3-v126';
 const CORE = ['./', './index.html', './manifest.webmanifest', './worldmap.jpg', './faces.jpg', './cg_hill1.jpg', './cg_hill2.jpg', './cg_hill3.jpg', './cg_hill4.jpg', './cg_mem1.jpg', './cg_mem2.jpg', './cg_mem3.jpg', './cg_mem4.jpg', './cg_mem5.jpg', './cg_mem6.jpg', './cg_mem7.jpg', './cg_mem8.jpg', './cg_mem9.jpg', './cg_mem10.jpg', './icon-192.png', './icon-512.png',
   './three.min.js'];
 self.addEventListener('install', e => {
