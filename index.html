@@ -7174,7 +7174,7 @@ function lvMul1(lv){const t=Math.min(1,Math.max(0,((lv||1)-1)/79));return 1+1.51
 /* ---- ドーピングの 種（ディスク1・第三部の どうぐから 食べる。だれに・いくつ 食べるか 選べる） ---- */
 const SEED1={atk:['力の種',2],def:['守りの種',2],matk:['魔力の種',2],mdef:['魔法の守りの種',2],mhp:['命の木の実',10],mmp:['不思議な木の実',5]};
 for(const k in SEED1)ITEMS['seed_'+k]={name:SEED1[k][0],price:0,seed:k};
-const seedLabel1=(a,k)=>k==='atk'?(a===P?'攻撃力':'魔力'):k==='def'?'守備力':k==='matk'?'魔法攻撃力':k==='mdef'?'魔法防御力':k==='mhp'?'最大HP':'最大MP';
+const seedLabel1=(a,k)=>k==='atk'?(a===P||a.xt?'攻撃力':'魔力'):k==='def'?'守備力':k==='matk'?'魔法攻撃力':k==='mdef'?'魔法防御力':k==='mhp'?'最大HP':'最大MP';
 function seedApply1(a,k,n){const v=SEED1[k][1]*n;a.seed=a.seed||{};a.seed[k]=(a.seed[k]||0)+v;
   if(k==='atk'){if(a===P)P.batk+=v}else if(k==='def'){if(a===P)P.bdef+=v;else a.def+=v}else if(k==='mhp'){a.mhp+=v;a.hp+=v}else if(k==='mmp'){a.mmp+=v;a.mp+=v}/* matk・mdefは a.seed に 記録して 計算で 使う */return v}
 /* 仲間の 魔力に 種の ぶんを 足す */
@@ -7193,6 +7193,7 @@ const SEEDCALC_ON=()=>!(typeof isP4==='function'&&isP4());
   const set=v=>{off=v;st.classList.toggle('off',v);tab.classList.toggle('on',v);try{localStorage.setItem('jil_statOff',v?'1':'0')}catch(e){}};
   const tap=(el,fn)=>{el.addEventListener('pointerdown',e=>{e.stopPropagation()});el.addEventListener('click',e=>{e.stopPropagation();fn()})};
   tap(st,()=>set(true));tap(tab,()=>set(false));set(off)})();
+
 
 
 
@@ -7317,9 +7318,20 @@ function bugInfo(k){
 
 /* ---- 仲間としての データ ---- */
 function bugK(k){return typeof k==='string'&&k.startsWith('x:')}
-function bugActor(t){const I=bugInfo(t);const mhp=Math.max(30,Math.min(9999,Math.round(I.hp)));
-  return{key:'x:'+t,name:I.name,joined:1,lv:Math.max(1,((partyList().map(actorOf)[0])||P).lv||1),exp:0,hp:mhp,mhp,mp:0,mmp:0,def:Math.round(Math.min(I.def,(typeof defOf==='function'?defOf():20)*1.5)),pts:0,magics:[],slots:[null,null,null],sel:0,xt:t}}
-{const base=actorOf;actorOf=function(k){if(bugK(k))return BS&&BS.xact&&BS.xact[k]||bugActor(k.slice(2));return base(k)}}
+/* バグ仲間の 種（ドーピング）：S.flags.xseed[種類] に ずっと 残る（抜けても 消えない） */
+function bugSeed(t){const X=S.flags.xseed=S.flags.xseed||{};return X[t]=X[t]||{}}
+function bugActor(t){const I=bugInfo(t),sd=bugSeed(t);const mhp=Math.max(30,Math.min(9999,Math.round(I.hp)+(sd.mhp||0)));const mmp=Math.min(999,sd.mmp||0);
+  const lead=actorOf(partyList()[0])||P;const def=Math.round(Math.min(I.def,(typeof defOf==='function'?defOf():20)*1.5))+(sd.def||0);
+  return{key:'x:'+t,name:I.name,joined:1,lv:Math.max(1,lead.lv||1),exp:0,hp:mhp,mhp,mp:mmp,mmp,def,atk:Math.round(I.atk)+(sd.atk||0),matk:sd.matk||0,mdef:sd.mdef||0,pts:0,magics:[],slots:[null,null,null],sel:0,xt:t,seed:sd}}
+/* 種を 食べさせる 相手の 一覧に バグ仲間を 足す（食べさせる 間だけ） */
+{const base=partyList;partyList=function(){const r=base();if(!BUG.seedPick)return r;return r.concat((S.flags.xmem||[]).filter(t=>EDEF[t]||BUGFB[t]).map(t=>'x:'+t))}}
+const bugSeedWrap=fn=>async function(){BUG.seedPick=1;BUG.act={};try{return await fn.apply(this,arguments)}finally{BUG.seedPick=0;BUG.act=null}};
+if(typeof useSeed1==='function')useSeed1=bugSeedWrap(useSeed1);
+setTimeout(()=>{try{
+  if(typeof P4ITEMUSE!=='undefined')for(const k in P4ITEMUSE)if(k.startsWith('seed_'))P4ITEMUSE[k]=bugSeedWrap(P4ITEMUSE[k]);
+  if(typeof p4Recalc==='function'){const base=p4Recalc;p4Recalc=function(a){if(a&&a.xt){Object.assign(a,bugActor(a.xt));return}return base(a)}}
+}catch(e){console.error(e)}},0);
+{const base=actorOf;actorOf=function(k){if(bugK(k)){if(BS&&BS.xact&&BS.xact[k])return BS.xact[k];if(BUG.act)return BUG.act[k]=BUG.act[k]||bugActor(k.slice(2));return bugActor(k.slice(2))}return base(k)}}
 {const base=nameOf;nameOf=function(k){if(bugK(k))return bugName(k.slice(2));return base(k)}}
 {const base=setupParty;setupParty=function(cfg,jilModel){
   const X=(S.flags.xmem||[]).filter(t=>EDEF[t]||BUGFB[t]);
@@ -7340,7 +7352,7 @@ function bugCur(){const b=BS;const t=curK().slice(2);const I=bugInfo(t);const pl
 function bugHud(){const b=BS;if(!b||!bugK(curK())){const o=$('#bughud');if(o)o.remove();return}const {I,mv}=bugCur();
   let el=$('#bughud');if(!el){el=document.createElement('div');el.id='bughud';el.style.cssText='position:fixed;left:50%;top:8px;transform:translateX(-50%);z-index:60;background:rgba(20,6,26,.86);border:2px solid #ff60ff;border-radius:8px;color:#fff;font:15px/1.5 inherit;padding:5px 14px;text-align:center;pointer-events:none;max-width:92vw';document.body.appendChild(el)}
   el.innerHTML=`<b style="color:#ff9cff">${I.name}</b>　技 ${b.pl.xi+1}/${I.mv.length}：<b>${mv.name}</b><br><span style="font-size:12px;opacity:.85">攻撃＝技を出す　スキル＝次の技　魔法＝前の技</span>`}
-function bugDmg(mul){const b=BS,pl=b.pl;const I=bugCur().I;return Math.max(1,Math.round(Math.max(20,I.atk*4)*mul*(pl.xBuf>0?1.3:1)*rnd(.9,1.1)))}
+function bugDmg(mul){const b=BS,pl=b.pl;const I=bugCur().I;return Math.max(1,Math.round(Math.max(20,(ACT().atk||I.atk)*4+(ACT().matk||0)*2)*mul*(pl.xBuf>0?1.3:1)*rnd(.9,1.1)))}
 function bugHit(e,mul){if(!e||e.dead)return;damageEnemy(e,0,'skill',bugDmg(mul))}
 function bugArc(R,A,mul,once){const b=BS,pl=b.pl;for(const e of b.enemies){if(e.dead||(once&&once.has(e)))continue;const d=e.pos.distanceTo(pl.pos);if(d<R+e.d.r&&(angDiff(pl.face,angTo(pl.pos,e.pos))<A||d<1.2)){once&&once.add(e);bugHit(e,mul)}}}
 function bugNova(at,R,mul,pull){const b=BS;for(const e of b.enemies){if(e.dead)continue;const d=e.pos.distanceTo(at);if(d<R+e.d.r){if(pull)e.pos.lerp(at,.55);bugHit(e,mul)}}}
