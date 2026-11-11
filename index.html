@@ -5054,7 +5054,7 @@ async function p3Ending(){
   P3.hideJil=true;
   AU.cur=null;playMusic('banica');
   await sleep(1200);await fadeTo(0,3500);
-  await waitSongEnd('banica');
+  /* 30秒で 次の 場面へ（ユーザー指定。前は 曲が 終わるまで 約3分） */await sleep(30000);
   await fadeTo(1,3000);stopMusic();P3.hideJil=false;
   await sleep(1500);
   location.reload();
