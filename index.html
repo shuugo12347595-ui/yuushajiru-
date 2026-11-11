@@ -7146,6 +7146,9 @@ function ujbHud(){const btn=document.querySelector('#touch-battle .skl');if(!btn
 {const base=winSeq;winSeq=async function(){const before={};const on=ULTJB_ON();if(on)for(const k of partyList())before[k]=actorOf(k).lv;await base();
   if(on)for(const k of partyList()){const a=actorOf(k);if(ULTJB[k]&&before[k]<100&&a.lv>=100){sfx('level');await say('',`${a.name||'ジル'}の 究極スキル「${ULTJB[k].name}」が 解放された！\n（戦闘中に SPを 100に して、ダメージを 受けたり、ジャストガード・ジャスト回避・攻撃を 当てると スキルボタンの 周りに 金色の バーが たまる。一周したら スキルボタンで 放てる）`)}}}}
 
+/* 最大HPは 9999、最大MPは 999 まで（ユーザー指定。第四部は 別に 同じ 上限あり） */
+function capStats1(a){if(!a)return;if(a.mhp>9999)a.mhp=9999;if(a.hp>a.mhp)a.hp=a.mhp;if(a.mmp>999)a.mmp=999;if(a.mp>a.mmp)a.mp=a.mmp}
+{const base=updateHUD;updateHUD=function(){try{capStats1(P);if(P.party)for(const k in P.party)capStats1(P.party[k])}catch(e){}return base.apply(this,arguments)}}
 /* 右上の ステータス：タップで しまう／「▼ ステータス」で 出す。設定は この端末に 覚える */
 (function(){const st=document.getElementById('stat'),tab=document.getElementById('statTab');let off=false;try{off=localStorage.getItem('jil_statOff')==='1'}catch(e){}
   const set=v=>{off=v;st.classList.toggle('off',v);tab.classList.toggle('on',v);try{localStorage.setItem('jil_statOff',v?'1':'0')}catch(e){}};
