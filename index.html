@@ -1380,6 +1380,7 @@ async function openMenu(){
       if(!list.length){await say('','どうぐを なにも 持っていない。');continue}
       const j=await selectList({title:'どうぐ',items:list,pos:'left'});if(j<0)continue;const it=list[j].k;
       if(it==='ship'){await useShip();return}if(it==='mateki'){await useMateki();return}if(typeof P4ITEMUSE!=='undefined'&&P4ITEMUSE[it]){await P4ITEMUSE[it]();return}
+      if(ITEMS[it]&&ITEMS[it].seed&&SEEDCALC_ON()){await useSeed1(ITEMS[it].seed);continue}
       if(it==='stone'){await say('','バニカが 作ってくれた 小さな 魔法石。\nほんのりと 温かい。');continue}
       const d=ITEMS[it];let tk=partyList()[0];if(partyList().length>1){const ks=partyList();const t=await selectList({title:d.pan?'だれが 使う？':'だれに？',items:ks.map(x=>{const a=actorOf(x);return{label:nameOf(x),sub:d.mp?`MP ${a.mp}/${a.mmp}`:`HP ${a.hp}/${a.mhp}`}}),pos:'left'});if(t<0)continue;tk=ks[t]}
       const A=actorOf(tk),nm=nameOf(tk);
@@ -2543,7 +2544,7 @@ function updateProj(dt){
       b.sc.remove(p.m);b.proj.splice(i,1)}}
 }
 function useHerb(){const b=BS,pl=b.pl;if(b.tut){const A=ACT();if(!(P.items.herb>0)){popup(pl.pos,'やくそうがない','g');return}P.items.herb--;pl.state='item';pl.st=0;const h=Math.min(ITEMS.herb.heal,A.mhp-A.hp);A.hp+=h;sfx('heal');popup(pl.pos,'+'+h,'h');return}
-  const its=Object.keys(ITEMS).filter(k=>P.items[k]>0&&!ITEMS[k].key&&!ITEMS[k].field);if(!its.length){popup(pl.pos,'どうぐがない','g');return}
+  const its=Object.keys(ITEMS).filter(k=>P.items[k]>0&&!ITEMS[k].seed&&!ITEMS[k].key&&!ITEMS[k].field);if(!its.length){popup(pl.pos,'どうぐがない','g');return}
   run(async()=>{b.paused=true;const i=await selectList({title:'どうぐ',items:its.map(k=>({label:ITEMS[k].name,sub:'×'+P.items[k]})),pos:'center'});
     let k=null,tk=curK();if(i>=0){k=its[i];const d=ITEMS[k];if(d.revive){const ds=(b.party||[]).filter(p=>p.a.hp<=0);if(!ds.length){b.paused=false;popup(pl.pos,'倒れた仲間が いない','g');return}const j=ds.length>1?await selectList({title:d.name+'：だれに？',items:ds.map(p=>({label:nameOf(p.k),sub:'たおれている'})),pos:'center'}):0;tk=j<0?null:ds[j].k}else if(d.pan){tk=curK()}else if(b.party&&b.party.filter(p=>p.a.hp>0).length>1){const ps=b.party.filter(p=>p.a.hp>0);const j=await selectList({title:d.name+'：だれに？',items:ps.map(p=>({label:nameOf(p.k),sub:d.mp?`MP ${p.a.mp}/${p.a.mmp}`:`HP ${Math.ceil(p.a.hp)}/${p.a.mhp}`})),pos:'center'});tk=j<0?null:ps[j].k}}
     b.paused=false;if(!k||!tk||!BS||BS!==b||b.ended)return;const d=ITEMS[k],A=actorOf(tk);
@@ -6607,6 +6608,8 @@ const SEEDMAPS={fac2:[[2,19],3],fac3:[[14,21],2],fac4:[[15,21],2],maouryo:[[3,29
     MAPMETA.seeds[id]=[];for(const[x,y]of pick){rows[y][x]='c';const kind=kinds[n++%kinds.length];MAPMETA.seeds[id].push([x,y,kind]);
       CHESTS[id+':'+x+','+y]={fn:async key=>{S.opened[key]=1;sfx('chest');P.items['seed_'+kind]=(P.items['seed_'+kind]||0)+1;await say('',`宝箱の 中に ${SEED4[kind][0]}が 入っていた！\n（どうぐ から 食べると ${SEED4[kind][1]}が 上がる）`);updateHUD()}}}
     BASE[id]=rows.map(r=>r.join(''))}})();
+/* 第三部では ディスク1と 同じ 種の 仕組み（ジル・バニカ・セレス）を 使う（ユーザー指定） */
+for(const k in SEED4){ITEMS['seed_'+k].seed=k;const p4fn=P4ITEMUSE['seed_'+k];P4ITEMUSE['seed_'+k]=async()=>{if(isP4())return p4fn();if(typeof useSeed1==='function'&&SEED1[k])return useSeed1(k)}}
 
 /* ================= 第四部 剣技（ユーザー指定の 一覧） ================= */
 for(const id of Object.keys(SKILLS))if(/^(k|c)_/.test(id))delete SKILLS[id];
@@ -7159,6 +7162,18 @@ function capStats1(a){if(!a)return;if(a.mhp>9999)a.mhp=9999;if(a.hp>a.mhp)a.hp=a
 {const base=updateHUD;updateHUD=function(){try{capStats1(P);if(P.party)for(const k in P.party)capStats1(P.party[k])}catch(e){}return base.apply(this,arguments)}}
 /* ジル捕獲の 戦闘（王都の 衛兵）：衛兵の 攻撃は 防御力無視の 即死（ユーザー指定。高レベルでも 必ず 捕まる） */
 {const base=calcEnemyDmg;calcEnemyDmg=function(e,magic){if(BS&&BS.cfg&&BS.cfg.arrest)return 9999999;return base(e,magic)}}
+/* ---- ドーピングの 種（ディスク1・第三部の どうぐから 食べる。だれに・いくつ 食べるか 選べる） ---- */
+const SEED1={atk:['力の種',2],def:['守りの種',2],matk:['魔力の種',2],mdef:['魔法の守りの種',2],mhp:['命の木の実',10],mmp:['不思議な木の実',5]};
+for(const k in SEED1)ITEMS['seed_'+k]={name:SEED1[k][0],price:0,seed:k};
+const seedLabel1=(a,k)=>k==='atk'?(a===P?'攻撃力':'魔力'):k==='def'?'守備力':k==='matk'?'魔法攻撃力':k==='mdef'?'魔法防御力':k==='mhp'?'最大HP':'最大MP';
+function seedApply1(a,k,n){const v=SEED1[k][1]*n;a.seed=a.seed||{};a.seed[k]=(a.seed[k]||0)+v;
+  if(k==='atk'){if(a===P)P.batk+=v}else if(k==='def'){if(a===P)P.bdef+=v;else a.def+=v}else if(k==='mhp'){a.mhp+=v;a.hp+=v}else if(k==='mmp'){a.mmp+=v;a.mp+=v}/* matk・mdefは a.seed に 記録して 計算で 使う */return v}
+/* 仲間の 魔力に 種の ぶんを 足す */
+async function useSeed1(k){const have=P.items['seed_'+k]||0;if(have<1)return;const ks=partyList();let t=ks[0];
+  if(ks.length>1){const j=await selectList({title:`だれに 食べさせる？（${SEED1[k][0]}）`,items:ks.map(x=>{const a=actorOf(x);return{label:a.name||'ジル',sub:`${seedLabel1(a,k)} +${SEED1[k][1]}`}})});if(j<0)return;t=ks[j]}
+  const a=actorOf(t);let cnt=1;if(have>1){const opts=[1,5,10,50,100].filter(c=>c<have);opts.push(have);
+    const j=await selectList({title:`いくつ 食べる？（${SEED1[k][0]} 持っている数 ${have}）`,items:opts.map(c=>({label:c===have?`全部（${c}個）`:`${c}個`,sub:`${seedLabel1(a,k)} +${SEED1[k][1]*c}`}))});if(j<0)return;cnt=opts[j]}
+  const v=seedApply1(a,k,cnt);P.items['seed_'+k]=have-cnt;sfx('level');await say('',`${a.name||'ジル'}は ${SEED1[k][0]}を ${cnt>1?cnt+'個 ':''}食べた！\n${seedLabel1(a,k)}が ${v} 上がった！`);updateHUD()}
 /* ---- 種の 効果（ディスク1で 食べた 種は ディスク2にも 引き継ぐ。第四部は 別の 仕組み） ---- */
 const SEEDCALC_ON=()=>!(typeof isP4==='function'&&isP4());
 {const base=girlBase;girlBase=function(a){const r=base(a);if(!SEEDCALC_ON()||!a||!a.seed)return r;return r+((a.seed.atk||0)+(a.seed.matk||0))*PLAYER_DMG*.62}}
