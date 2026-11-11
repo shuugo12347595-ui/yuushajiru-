@@ -6008,9 +6008,14 @@ const C4=(ex='通常')=>C_(ex);
 /* タイトル：第三部を 終えた セーブは 第四部へ */
 {const base=titleScreen3;titleScreen3=async function(){const sv=loadSave();
   if(sv&&sv.S&&sv.S.flags&&(sv.S.flags.p3done||sv.S.flags.p4)){mode='title';$('#title').hidden=false;$('#hud').hidden=true;$('#title .sub2').textContent='第四部 ― 最後の勇者 ―';const host=$('#titleMenu');host.innerHTML='';
-    const items=[{label:'つづきから',sub:sv.S.flags.p4?'':'第四部へ'},{label:'そうさ方法'}];
-    while(true){const pr=selectList({items,cancel:false,pos:'inline'});host.appendChild(selectList.last);const i=await pr;audioInit();if(i!==1)tryLandscape();
-      if(i===1){await showControls();continue}
+    /* 2周目：第三部から やり直せる（ユーザー指定。今の セーブは 次に セーブしたとき 上書き） */
+    const items=[{label:'つづきから',sub:sv.S.flags.p4?'':'第四部へ'},{label:'引き継ぎコードで はじめる',sub:'第三部から'},{label:'コードなしで はじめる',sub:'第三部から・Lv35'},{label:'そうさ方法'}];
+    while(true){const pr=selectList({items,cancel:false,pos:'inline'});host.appendChild(selectList.last);const i=await pr;audioInit();if(i!==3)tryLandscape();
+      if(i===3){await showControls();continue}
+      if(i===1||i===2){const c=await selectList({title:'今の セーブデータは、次に セーブしたとき 上書きされます。第三部から はじめますか？',items:[{label:'はじめる'},{label:'やめる'}]});if(c!==0)continue;
+        $('#title .sub2').textContent='第三部';document.body.classList.remove('p4');
+        if(i===1){const d=await askCarryCode();if(!d)continue;$('#title').hidden=true;applyCarry(d);await p3Opening();return}
+        $('#title').hidden=true;applyCarry(null);await p3Opening();return}
       $('#title').hidden=true;mode='field';applySave(sv);$('#touch-field').classList.add('show');
       if(!S.flags.p4){await p4Opening();return}
       document.body.classList.add('p4');updateHUD();await fadeTo(0,500);if(S.step===100)await p4Opening();return}}
