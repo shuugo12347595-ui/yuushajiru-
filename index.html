@@ -6859,7 +6859,7 @@ async function dbgSound(){let j=0;while(true){j=await selectList({title:'サウ�
   if(j<0||j===DBG_SONGS.length+1)return;if(j===DBG_SONGS.length){DBG.music=null;stopMusic();AU.cur=null;continue}DBG.music=DBG_SONGS[j][0];playMusic(DBG.music)}}
 
 /* ---- ドーピング：種を 何個でも ---- */
-async function dbgSeeds(){if(typeof SEED4==='undefined'||!isP4()){await say('種の人','この 種は 第四部から 使えるんだ。');return}
+async function dbgSeeds(){/* 第三部でも もらえる（食べると 第三部の 仕組みで 上がる） */
   const ks=Object.keys(SEED4);while(true){const j=await selectList({title:'どの 種が ほしい？',items:[...ks.map(k=>({label:SEED4[k][0],sub:`${SEED4[k][1]}が 上がる（持っている数 ${P.items['seed_'+k]||0}）`})),{label:'全部の 種'},{label:'もどる'}]});
     if(j<0||j===ks.length+1)return;const n=[1,10,99][await selectList({title:'いくつ？',items:[{label:'1個'},{label:'10個'},{label:'99個'}]})];if(!n)continue;
     for(const k of(j===ks.length?ks:[ks[j]]))P.items['seed_'+k]=(P.items['seed_'+k]||0)+n;sfx('chest');await say('種の人',`${j===ks.length?'全部の 種':SEED4[ks[j]][0]}を ${n}個 わたしたぞ。\n（どうぐ から 食べると 上がる）`);updateHUD()}}
