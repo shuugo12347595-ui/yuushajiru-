@@ -2791,11 +2791,11 @@ async function winSeq(){
   const b=BS;await sleep(500);sfx('win');banner('勝利！',1600);stopMusic();await sleep(1200);
   const r=b.results;r.exp=Math.max(1,Math.round(r.exp*EXP_RATE));P.exp+=r.exp;P.gold+=r.gold;
   await say('',`魔物たちを やっつけた！\n${r.exp}ポイントの 経験値と ${r.gold}ゴールドを 手に入れた！`);
-  while(P.exp>=expNext()){P.exp-=expNext();P.lv++;const hp=8+Math.floor(Math.random()*4)+(P.lv>=10?3:0),da=batkFor(P.lv)-P.batk,dd=P.lv>=10?2:1;P.mhp+=hp;P.hp+=hp;P.batk+=da;P.bdef+=dd;sfx('level');P.pts+=2;
+  while(P.lv<100&&P.exp>=expNext()){P.exp-=expNext();P.lv++;const hp=8+Math.floor(Math.random()*4)+(P.lv>=10?3:0),da=batkFor(P.lv)-P.batk,dd=P.lv>=10?2:1;P.mhp+=hp;P.hp+=hp;P.batk+=da;P.bdef+=dd;sfx('level');P.pts+=2;
     if(S.flags.magicOn){P.mmp+=3;P.mp+=3;await say('',`ジルは レベル${P.lv}に あがった！\n最大HP+${hp}　最大MP+3　攻撃力+${da}　守備力+${dd}\nAPを 2 手に入れた！（メニュー →キャラ →習得する）`)}
     else await say('',`ジルは レベル${P.lv}に あがった！\n最大HP+${hp}　攻撃力+${da}　守備力+${dd}`)}
   for(const k of partyList().slice(1)){const a=actorOf(k),M=MEMBERS[k];a.exp+=r.exp;
-    while(a.exp>=expNextLv(a.lv)){a.exp-=expNextLv(a.lv);a.lv++;const hp=M.hpG+Math.floor(Math.random()*3)+(a.lv>=20?2:0);a.mhp+=hp;a.hp+=hp;a.mmp+=M.mpG;a.mp+=M.mpG;a.def+=1;a.pts+=2;sfx('level');
+    while(a.lv<100&&a.exp>=expNextLv(a.lv)){a.exp-=expNextLv(a.lv);a.lv++;const hp=M.hpG+Math.floor(Math.random()*3)+(a.lv>=20?2:0);a.mhp+=hp;a.hp+=hp;a.mmp+=M.mpG;a.mp+=M.mpG;a.def+=1;a.pts+=2;sfx('level');
       await say('',`${a.name}は レベル${a.lv}に あがった！\n最大HP+${hp}　最大MP+${M.mpG}　守備力+1\nAPを 2 手に入れた！`)}}
   await endBattle('win');
 }
