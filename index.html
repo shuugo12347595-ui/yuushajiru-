@@ -1393,7 +1393,7 @@ async function tianaLog(){const L=[['cat','猫のミケを 探す','ミーナ婆
   const items=L.map(([k,n,w,h])=>({label:(S.q2&&S.q2[k]==='rep'?'✔ ':S.q2&&S.q2[k]==='got'?'★ ':'・ ')+n,sub:S.q2&&S.q2[k]==='rep'?'報告済み':S.q2&&S.q2[k]==='got'?w+'に報告':h}));items.push({label:'もどる'});await selectList({title:'ティアナの依頼',items,pos:'left'})}
 async function girlMenu(k){
   while(true){const a=actorOf(k);
-    const info=`${a.name}　Lv ${a.lv}　HP ${a.hp}/${a.mhp}　MP ${a.mp}/${a.mmp}\n守備力 ${a.def}　魔力 ${Math.round(girlBase(a))}　経験値 ${a.exp}/${expNextLv(a.lv)}`;
+    const info=`${a.name}　Lv ${a.lv}　HP ${a.hp}/${a.mhp}　MP ${a.mp}/${a.mmp}\n守備力 ${a.def}　魔力 ${Math.round(girlBase(a))}　魔法防御 ${(a.seed&&a.seed.mdef)||0}　経験値 ${a.exp}/${expNextLv(a.lv)}`;
     const opts=[{k:'st',label:'ステータス'},{k:'set',label:'魔法をセット',sub:a.slots.map(x=>x?SPELLS[x].name:'－').join('/')},{k:'learn',label:'習得する',sub:a.pts+'AP'},{k:'x',label:'もどる'}];
     const sel=await selectList({title:`${a.name}　AP ${a.pts}`,items:opts,pos:'left'});if(sel<0||opts[sel].k==='x')return;const c=opts[sel].k;
     if(c==='st'){await say('',info);continue}
@@ -1419,7 +1419,7 @@ async function questLog(){const items=QUESTS.map(q=>({label:(S.q[q.k]==='rep'?'�
 async function charMenu(){
   while(true){
     const mag=!!S.flags.magicOn;
-    const info=`ジル　Lv ${P.lv}　HP ${P.hp}/${P.mhp}${mag?`　MP ${P.mp}/${P.mmp}`:''}\n攻撃力 ${atkOf()}　守備力 ${defOf()}${mag?`　魔力 ${magPow()}`:''}　経験値 ${P.exp}/${expNext()}\n武器：${WEAPONS[P.weapon].name}　鎧：${ARMORS[P.armor].name}　盾：${SHIELDS[P.shield].name}`;
+    const info=`ジル　Lv ${P.lv}　HP ${P.hp}/${P.mhp}${mag?`　MP ${P.mp}/${P.mmp}`:''}\n攻撃力 ${atkOf()}　守備力 ${defOf()}${mag?`　魔力 ${magPow()+((P.seed&&P.seed.matk)||0)}`:''}　魔法防御 ${(P.seed&&P.seed.mdef)||0}　経験値 ${P.exp}/${expNext()}\n武器：${WEAPONS[P.weapon].name}　鎧：${ARMORS[P.armor].name}　盾：${SHIELDS[P.shield].name}`;
     const opts=[{k:'st',label:'ステータス'},{k:'wp',label:'武器をかえる',sub:WEAPONS[P.weapon].name}];
     if(mag)opts.push({k:1,label:'剣技をセット',sub:SKILLS[curEqSkill()].name},{k:2,label:'魔法をセット',sub:P.eqMagic?MAGICS[P.eqMagic].name:'なし'},{k:3,label:'習得する',sub:P.pts+'AP'});
     opts.push({k:'x',label:'もどる'});
