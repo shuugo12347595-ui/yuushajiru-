@@ -7198,6 +7198,7 @@ const SEEDCALC_ON=()=>!(typeof isP4==='function'&&isP4());
 
 
 
+
 /* <<BUGROOM */
 /* ================= バグ技：バグルーム（全ディスク・ユーザー指定） =================
    入り方：同じ 2つの 場所（町⇔ダンジョン、町⇔フィールドなど）を 行き来して、場所の 入れ替えを 64回 くり返す。
@@ -7325,7 +7326,8 @@ function bugActor(t){const I=bugInfo(t),sd=bugSeed(t);const mhp=Math.max(30,Math
   return{key:'x:'+t,name:I.name,joined:1,lv:Math.max(1,lead.lv||1),exp:0,hp:mhp,mhp,mp:mmp,mmp,def,atk:Math.round(I.atk)+(sd.atk||0),matk:sd.matk||0,mdef:sd.mdef||0,pts:0,magics:[],slots:[null,null,null],sel:0,xt:t,seed:sd}}
 /* 種を 食べさせる 相手の 一覧に バグ仲間を 足す（食べさせる 間だけ） */
 {const base=partyList;partyList=function(){const r=base();if(!BUG.seedPick)return r;return r.concat((S.flags.xmem||[]).filter(t=>EDEF[t]||BUGFB[t]).map(t=>'x:'+t))}}
-const bugSeedWrap=fn=>async function(){BUG.seedPick=1;BUG.act={};try{return await fn.apply(this,arguments)}finally{BUG.seedPick=0;BUG.act=null}};
+/* 一覧に 足すのは 「だれに？」の 一覧を 作る 一瞬だけ（ずっと 足すと 後ろを 歩く 仲間の 絵に バグ仲間が 混ざって 止まる） */
+const bugSeedWrap=fn=>async function(){const outer=!BUG.act;if(outer)BUG.act={};BUG.seedPick=1;let p;try{p=fn.apply(this,arguments)}finally{BUG.seedPick=0}try{return await p}finally{if(outer)BUG.act=null}};
 if(typeof useSeed1==='function')useSeed1=bugSeedWrap(useSeed1);
 setTimeout(()=>{try{
   if(typeof P4ITEMUSE!=='undefined')for(const k in P4ITEMUSE)if(k.startsWith('seed_'))P4ITEMUSE[k]=bugSeedWrap(P4ITEMUSE[k]);
