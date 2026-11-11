@@ -3167,7 +3167,7 @@ async function throneEvent(){
   await say('ジル','な……何を 言って……！');
   if(king)king.dir='down';
   await say('アレスタ王','衛兵たちよ！ 勇者ジル……いや、犯罪者ジルを 捕獲せよ！！');
-  await doBattle({enemies:Array(10).fill('guard'),bg:'castle',waves:true,maxAtk:4,noEscape:true,music:'boss',title:'衛兵たちが 襲いかかってきた！'});
+  await doBattle({enemies:Array(10).fill('guard'),bg:'castle',waves:true,maxAtk:4,noEscape:true,music:'boss',title:'衛兵たちが 襲いかかってきた！',arrest:1});
   await fadeTo(1,600);stopMusic();
   await narrate(['次から次へと 押し寄せる 衛兵たち……。','ついに ジルは 力尽き、取り押さえられた。'],2400);
   await say('アレスタ王','今すぐ 断頭台の 用意をせよ！！ ギロチンの刑に 処す！');
@@ -7149,6 +7149,8 @@ function ujbHud(){const btn=document.querySelector('#touch-battle .skl');if(!btn
 /* 最大HPは 9999、最大MPは 999 まで（ユーザー指定。第四部は 別に 同じ 上限あり） */
 function capStats1(a){if(!a)return;if(a.mhp>9999)a.mhp=9999;if(a.hp>a.mhp)a.hp=a.mhp;if(a.mmp>999)a.mmp=999;if(a.mp>a.mmp)a.mp=a.mmp}
 {const base=updateHUD;updateHUD=function(){try{capStats1(P);if(P.party)for(const k in P.party)capStats1(P.party[k])}catch(e){}return base.apply(this,arguments)}}
+/* ジル捕獲の 戦闘（王都の 衛兵）：衛兵の 攻撃は 防御力無視の 即死（ユーザー指定。高レベルでも 必ず 捕まる） */
+{const base=calcEnemyDmg;calcEnemyDmg=function(e,magic){if(BS&&BS.cfg&&BS.cfg.arrest)return 9999999;return base(e,magic)}}
 /* 右上の ステータス：タップで しまう／「▼ ステータス」で 出す。設定は この端末に 覚える */
 (function(){const st=document.getElementById('stat'),tab=document.getElementById('statTab');let off=false;try{off=localStorage.getItem('jil_statOff')==='1'}catch(e){}
   const set=v=>{off=v;st.classList.toggle('off',v);tab.classList.toggle('on',v);try{localStorage.setItem('jil_statOff',v?'1':'0')}catch(e){}};
