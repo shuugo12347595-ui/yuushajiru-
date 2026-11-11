@@ -7162,6 +7162,15 @@ function capStats1(a){if(!a)return;if(a.mhp>9999)a.mhp=9999;if(a.hp>a.mhp)a.hp=a
 {const base=updateHUD;updateHUD=function(){try{capStats1(P);if(P.party)for(const k in P.party)capStats1(P.party[k])}catch(e){}return base.apply(this,arguments)}}
 /* ジル捕獲の 戦闘（王都の 衛兵）：衛兵の 攻撃は 防御力無視の 即死（ユーザー指定。高レベルでも 必ず 捕まる） */
 {const base=calcEnemyDmg;calcEnemyDmg=function(e,magic){if(BS&&BS.cfg&&BS.cfg.arrest)return 9999999;return base(e,magic)}}
+/* ---- 通常攻撃の レベル倍率（ユーザー指定：第四部の カイルと 同じ 上がり方を ディスク1・第三部の 全員に）----
+   倍率 ＝ 1 ＋ 1.51 ×（(Lv−1)÷79）^0.8（Lv80で 2.51倍、それ以上は 同じ）。敵の HPも 同じ 倍率で 上げる。第四部は 別の 仕組み */
+const LVMUL_ON=()=>!(typeof isP4==='function'&&isP4());
+function lvMul1(lv){const t=Math.min(1,Math.max(0,((lv||1)-1)/79));return 1+1.51*Math.pow(t,.8)}
+{const base=damageEnemy;damageEnemy=function(e,mult,kind,fixed,ign){if(LVMUL_ON()&&fixed==null&&BS&&curK()==='jil')mult*=lvMul1(P.lv);return base(e,mult,kind,fixed,ign)}}
+{const base=girlDmg;girlDmg=function(a,pow,el,e){return base(a,LVMUL_ON()?pow*lvMul1(a&&a.lv||P.lv):pow,el,e)}}
+{const base=scaledDef;scaledDef=function(type){const d=base(type);if(!LVMUL_ON()||NO_SCALE[type]||type==='dbgslime')return d;const r=Object.assign({},d);r.hp=Math.round(d.hp*lvMul1(P.lv));return r}}
+{const base=magDmg;magDmg=function(e,id){const r=base(e,id);return LVMUL_ON()?Math.max(1,Math.round(r*lvMul1(P.lv))):r}}
+
 /* ---- ドーピングの 種（ディスク1・第三部の どうぐから 食べる。だれに・いくつ 食べるか 選べる） ---- */
 const SEED1={atk:['力の種',2],def:['守りの種',2],matk:['魔力の種',2],mdef:['魔法の守りの種',2],mhp:['命の木の実',10],mmp:['不思議な木の実',5]};
 for(const k in SEED1)ITEMS['seed_'+k]={name:SEED1[k][0],price:0,seed:k};
