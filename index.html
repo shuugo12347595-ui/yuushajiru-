@@ -7193,6 +7193,232 @@ const SEEDCALC_ON=()=>!(typeof isP4==='function'&&isP4());
   const set=v=>{off=v;st.classList.toggle('off',v);tab.classList.toggle('on',v);try{localStorage.setItem('jil_statOff',v?'1':'0')}catch(e){}};
   const tap=(el,fn)=>{el.addEventListener('pointerdown',e=>{e.stopPropagation()});el.addEventListener('click',e=>{e.stopPropagation();fn()})};
   tap(st,()=>set(true));tap(tab,()=>set(false));set(off)})();
+
+
+
+
+/* <<BUGROOM */
+/* ================= バグ技：バグルーム（全ディスク・ユーザー指定） =================
+   入り方：同じ 2つの 場所（町⇔ダンジョン、町⇔フィールドなど）を 行き来して、場所の 入れ替えを 64回 くり返す。
+   ほかの 場所に 行くと 数えなおし。
+   中には 魔王デスヴァルド・七罪魔将・バニカ・ジル・魔王ジル・原罪イブ・すべての 敵モブが 立っている。
+   話しかけると なぜか パーティに 加わる（バグの 仲間は 3人まで。4人目で いちばん古い 仲間が 抜ける）。
+   戦闘では そのボス（モブ）の 技を そのまま 自分で 使う：攻撃＝技を出す／スキル＝次の技／魔法＝前の技。 */
+const BUG={a:null,b:null,n:0,pend:false};
+const BUG_N=64,BUG_MAX=3;
+{const base=loadMap;loadMap=function(id,x,y,dir){const prev=S&&S.map;if(id==='bugroom')bugBuild();const r=base(id,x,y,dir);
+  try{if(id!=='bugroom'&&prev&&prev!=='bugroom'&&prev!==id&&!(BS&&!BS.ended)){
+    if(BUG.a===id&&BUG.b===prev)BUG.n++;else{BUG.n=1}
+    BUG.a=prev;BUG.b=id;if(BUG.n>=BUG_N){BUG.n=0;BUG.a=BUG.b=null;BUG.pend=true}}}catch(e){console.error(e)}
+  return r}}
+{const base=fieldUpdate;fieldUpdate=function(dt){
+  if(BUG.pend&&mode==='field'&&!busy&&!uiStack.length&&F.map&&F.map.id!=='bugroom'&&!F.moving){BUG.pend=false;run(bugEnter)}
+  return base(dt)}}
+
+/* ディスク1に ない 見た目（第四部と 同じ 色） */
+{const FB={mjil:{H:'#4a48c0',h:'#2a2880',S:'#e8c0a8',E:'#e01828',C:'#a01428',T:'#1a0e14',Y:'#8a1020',y:'#2a0e18',K:'#1a0e14',G:'#2a0e18',P:'#1a0e14',B:'#140a10',spiky:1},
+  vanicia:{H:'#b0182a',h:'#70101c',S:'#f4dcd4',E:'#e02838',C:'#6a0c18',T:'#1a0e14',Y:'#d8b048',y:'#3a0a14',K:'#6a0c18',G:'#1a0e14',P:'#6a0c18',B:'#1a0e14',long:1,dress:1},
+  orphegot:{H:'#d0c8f0',h:'#9a90c8',S:'#f0e0e0',E:'#8a5ad8',C:'#3a1a5a',T:'#1a1024',Y:'#d8b048',y:'#2a1440',K:'#3a1a5a',G:'#1a1024',P:'#1a1024',B:'#0e0a14',long:1},
+  barbatos:{H:'#1a0e10',h:'#0a0608',S:'#e8c0a0',E:'#d01828',C:'#2a0e14',T:'#a01828',Y:'#d8b048',y:'#1a0a0e',K:'#2a0e14',G:'#1a0a0e',P:'#1a0a0e',B:'#0e0608',spiky:1},
+  eve:{H:'#f0f0f8',h:'#b8b8d0',S:'#f8ece8',E:'#d02040',C:'#1a1424',T:'#e8e0f0',Y:'#d8b048',y:'#5a1030',K:'#1a1424',G:'#f8ece8',P:'#1a1424',B:'#1a1424',long:1,dress:1},
+  avarion:{H:'#e4dde8',h:'#a8a0b8',S:'#f4dcd0',E:'#c8202a',C:'#1a1420',T:'#2a1e2a',Y:'#d8b048',y:'#5a4a30',K:'#1a1420',G:'#1a1420',P:'#1a1420',B:'#0e0a10',long:1},
+  valzerion:{H:'#f0d070',h:'#b8903a',S:'#f4d8c8',E:'#7a4ab8',C:'#1a1424',T:'#4a2268',Y:'#d8b048',y:'#2a1438',K:'#1a1424',G:'#1a1424',P:'#1a1424',B:'#0e0a14'},
+  venodias:{H:'#5a2a6a',h:'#341a42',S:'#f4d0cc',E:'#d0306a',C:'#2a0e1a',T:'#7a1a34',Y:'#d8b048',y:'#3a0e1e',K:'#2a0e1a',G:'#2a0e1a',P:'#1a0a12',B:'#0e0608',long:1}};
+  for(const k in FB)if(!PAL[k])PAL[k]=FB[k]}
+/* ---- 部屋 ---- */
+function bugTypes(){
+  const top=['deathvald','avarion','avarion3','valzerion','venodias','nemetis','vanicia','orphegot','barbatos','qbanica','ejil4','ejil7','fjil','mjil','eve'];
+  const L=top.filter(k=>k==='deathvald'||EDEF[k]||BUGFB[k]);
+  for(const k in EDEF){if(k==='dummy'||k==='dbgslime'||L.includes(k))continue;L.push(k)}
+  return L}
+const BUG_COLS=13;
+function bugBuild(){const L=bugTypes();const rows=Math.ceil(L.length/BUG_COLS);const W=BUG_COLS*2+3,H=rows*2+6;
+  const g=[];for(let y=0;y<H;y++){let r='';for(let x=0;x<W;x++)r+=(x===0||y===0||x===W-1||y===H-1)?'Q':'P';g.push(r)}
+  BASE.bugroom=g;
+  NPCS.bugroom=L.map((k,i)=>({id:'bug_'+k,spr:bugSpr(k),x:2+(i%BUG_COLS)*2,y:2+Math.floor(i/BUG_COLS)*2,dir:'down',talk:()=>bugTalk(k)}));
+  NPCS.bugroom.push({id:'bug_exit',spr:'shade',x:Math.floor(W/2),y:H-2,dir:'up',talk:async()=>{const j=await selectList({title:'ゆがんだ 出口',items:[{label:'もとの 場所に もどる'},{label:'まだ いる'}]});if(j===0)await bugLeave()}});
+  return{W,H}}
+MAPDEF.bugroom={name:'？？？？',fill:'Q',music:()=>['ruin2','dungeon','ruin','tower'].find(k=>(typeof BGM_FILES!=='undefined'&&BGM_FILES[k])||(typeof SONGS!=='undefined'&&SONGS[k]))||null};
+BASE.bugroom=['QQQ','QPQ','QQQ'];
+function bugSpr(k){const has=s=>!!PAL[s];
+  const named={deathvald:'deathvald',qbanica:'banica',ejil4:'jil',ejil7:'jil',fjil:'jil',mjil:'mjil',avarion3:'avarion'};
+  if(named[k])return has(named[k])?named[k]:'jil';
+  if(has(k))return k;
+  const t=k+' '+((EDEF[k]&&EDEF[k].name)||'');
+  if(/slime|スライム/.test(t))return'slimeS';if(/wolf|ウルフ|狼/.test(t))return'wolf';if(/regnas/.test(t))return'regnasS';if(/dragon|ドラゴン|竜/.test(t))return'dragonS';
+  if(/griffon|unicorn|グリフォン|ユニコーン/.test(t))return'griffonS';
+  if(/golem|colossus|warden|guardian|sentinel|mweapon|kishin|annihil|runaway|scrap|drone|cannon|spider|ゴーレム|機|兵器|巨像|番人/.test(t))return'golemS';
+  if(/goblin|bandit|ゴブリン|盗賊/.test(t))return'goblin';if(/mage|まどうし|魔導師/.test(t))return has('mageS')?'mageS':'hood';
+  if(/demon|魔族/.test(t))return has('demonS')?'demonS':'shade';if(/knight|騎士/.test(t))return'bknight';
+  if(/swordsman/.test(t))return'sword';if(/infected|zombie|感染|ゾンビ/.test(t))return has('infected')?'infected':'shade';
+  if(/guard|soldier|kyoukan|aelite|兵|衛|教官/.test(t))return has('asold')?'asold':'guard';
+  return'shade'}
+async function bugEnter(){S.flags.bugRet={id:F.map.id,x:F.px,y:F.py,dir:F.dir};const sz=bugBuild();
+  sfx('tele');const fx=document.createElement('div');fx.style.cssText='position:fixed;inset:0;z-index:80;pointer-events:none;mix-blend-mode:difference;background:repeating-linear-gradient(0deg,#f0f 0 3px,#0ff 3px 6px,transparent 6px 14px)';document.body.appendChild(fx);
+  for(let i=0;i<8;i++){fx.style.transform=`translate(${rnd(-30,30)}px,${rnd(-12,12)}px)`;fx.style.opacity=Math.random()<.5?1:.4;document.body.style.filter=`hue-rotate(${rnd(0,360)}deg) invert(${Math.random()<.3?1:0})`;await sleep(70)}
+  document.body.style.filter='';fx.remove();
+  await goMap('bugroom',Math.floor(sz.W/2),sz.H-3,'up');
+  if(!S.flags.bugSeen){S.flags.bugSeen=1;await say('','……世界の 継ぎ目に 落ちてしまった。\n（バグルーム）')}}
+async function bugLeave(){const r=S.flags.bugRet||{id:'world',x:7,y:15,dir:'down'};sfx('tele');await goMap(r.id,r.x,r.y,r.dir)}
+const BUG_LINES=['……？','ﾅｶﾏﾆ ﾅﾘﾀｿｳﾆ ｺﾁﾗｦ ﾐﾃｲﾙ','■■■■■■ ……','………………（じっと こちらを 見ている）','ヨ ロ シ ク','？？？？？'];
+function bugName(k){const d=EDEF[k]||BUGFB[k];return d?d.name:k}
+async function bugTalk(k){const X=S.flags.xmem=S.flags.xmem||[];const nm=bugName(k);
+  if(X.includes(k)){const j=await selectList({title:nm+'を パーティから 外す？',items:[{label:'外す'},{label:'そのまま'}]});if(j===0){X.splice(X.indexOf(k),1);sfx('cancel');await say('',nm+'は パーティから 外れた。')}return}
+  await say(nm,pick(BUG_LINES));
+  let out=null;if(X.length>=BUG_MAX)out=X.shift();X.push(k);sfx('ok');
+  await say('',(out?bugName(out)+'が 抜けて、\n':'')+'なぜか '+nm+'が パーティに 加わった！'+(X.length===1?'\n（戦闘中に 交代で 操作できる。技は そのまま 使える）':''))}
+
+/* ---- このディスクに いない ボスの 代わりの データ ---- */
+const BUGFB={
+  deathvald:{name:'魔王デスヴァルド',hp:9999,atk:2600,def:1200,col:'#c01828',
+    mv:[['swing','魔剣の 一閃'],['combo','魔王の 連撃'],['burst','魔王の 威圧'],['rain','闇の 雨'],['meteor','終焉の 星'],['blink','魔影移し'],['fan','黒炎の 扇']],
+    mesh:()=>makeHumanoid({skin:'#ecd8cc',eye:'#c01828',hair:'#d8d4e4',tunic:'#2a1620',pants:'#1a0e14',boots:'#1a0e14',sleeve:'#3a1a24',glove:'#1a0e14',belt:'#c9a33a',buckle:'#7a1020',cape:'#1a0e14',weapon:'long',scale:1.5})},
+  ejil4:{name:'勇者ジル',hp:9999,atk:1500,def:900,col:'#9fd0ff',mv:['j_souga','j_souren','j_kabuto','j_senpu','j_soukou','j_hien','j_fire','j_kage'],mesh:()=>makeJilFF7()},
+  mjil:{name:'魔王ジル',hp:9999,atk:3000,def:1500,col:'#ff3a6a',mv:['j_shinsoku','j_souten','j_mikazuki','j_kabuto','j_tsubame','j_senpu','j_dankuu','j_kage','j_fire','j_light','j_kenki','j_enchant','j_stone'],
+    mesh:()=>{const k=makeJilFF7();for(const m of k.mats||[]){if(!m.color)continue;const c=m.color.getHexString();if(c==='2f56c8'||c==='1d3a8f')m.color.set('#4a48c0');else if(c==='2f5fbf'||c==='22479a')m.color.set('#1a0e14');else if(c==='c8322b')m.color.set('#a01428');else if(c==='ecebe4')m.color.set('#2a0e18')}return k}},
+  vanicia:{name:'暴食のヴァニシア',hp:9999,atk:1020,def:210,col:'#ff2040',mv:[['combo','拳の 二連撃'],['pull','暴食ラリアット'],['summon','呼び寄せ'],['vortex','飢餓の渦'],['ranbu','暴食乱舞']],
+    mesh:()=>makeHumanoid({skin:'#f4dcd4',eye:'#e02838',hair:'#b0182a',tunic:'#6a0c18',pants:'#1a0e14',boots:'#1a0e14',sleeve:'#8a1020',glove:'#f4dcd4',belt:'#d8b048',buckle:'#e02838',scale:1.35})},
+  orphegot:{name:'怠惰のオルフェゴート',hp:9999,atk:1150,def:330,col:'#b070ff',mv:[['slow','無気力'],['burst','重圧'],['rain','黒い手'],['bolt','眠りの誘い']],
+    mesh:()=>makeHumanoid({skin:'#f0e0e0',eye:'#8a5ad8',hair:'#d0c8f0',tunic:'#3a1a5a',pants:'#1a1024',boots:'#0e0a14',sleeve:'#5a2a8a',glove:'#f0e0e0',belt:'#d8b048',cape:'#2a1440',weapon:'club',scale:1.35})},
+  barbatos:{name:'憤怒のバルバトス',hp:9999,atk:1400,def:400,col:'#ff4a4a',mv:['k_iai','k_tsuki','k_ren','k_kaeshi','k_senpu','k_hayate','k_tsubame','k_kaze','k_jin','k_kage','k_hachiren','k_shin','k_getsu','k_ittou','k_ura','k_tenjin','k_muei','k_hien','k_tensho','k_tendan'],
+    mesh:()=>makeHumanoid({skin:'#e8c0a0',eye:'#d01828',hair:'#1a0e10',spiky:1,tunic:'#2a0e14',pants:'#1a0a0e',boots:'#0e0608',sleeve:'#2a0e14',glove:'#1a0a0e',belt:'#a01828',buckle:'#d8b048',cape:'#3a0e14',scarf:'#5a4a48',weapon:'long',scale:1.45})},
+  eve:{name:'原罪イブ',hp:9999,atk:3100,def:1400,col:'#ff4a8a',mv:[['pull','暴食：飢餓の渦'],['combo','色欲：魅惑の連撃'],['summon','暴食：呼び寄せ'],['burst','傲慢の領域'],['fan','傲慢：王威の扇'],['lunge','突進']],
+    mesh:()=>makeHumanoid({skin:'#f8ece8',eye:'#d02040',hair:'#f0f0f8',tunic:'#1a1424',pants:'#1a1424',boots:'#1a1424',sleeve:'#e8e0f0',glove:'#f8ece8',belt:'#d8b048',buckle:'#d02040',scale:1.5})},
+};
+/* プレイヤーの 技を 借りている ボス（ジル・バルバトス）の 技の 名前と 形 */
+const BUGMV={k_iai:['居合一閃','single',1.3],k_tsuki:['刺突','lunge',1],k_ren:['三段斬り','combo',.8,3],k_jin:['飛刃','bolt',1],k_kaze:['旋風','spin',1],k_kage:['影踏み','blink',1],k_tsubame:['燕返し','tsubame',1.2],k_getsu:['月影','arc',1.4],k_shin:['神速八連','combo',.45,8],k_ura:['裏一閃','heavy',1.9],k_hayate:['疾風斬り','lunge',1.2],k_kaeshi:['返し刃','counter',1.4],k_senpu:['旋風斬','spin',1.2],k_tenjin:['居合・天神無双','tenjin',2.2],k_hien:['飛燕連斬','combo',.9,3],k_zantetsu:['斬鉄','buff',1],k_muei:['無影斬','blink',1.5],k_fudo:['不動の構え','buff',1],k_hachiren:['八連閃','combo',.55,8],k_shura:['修羅の太刀','buff',1],k_tensho:['天翔斬','leap',1.7],k_ittou:['一刀両断','heavy',2.1],k_tendan:['奥義・天断一閃','charge',2.6],k_maken:['魔剣','buff',1],
+  j_soukou:['蒼閃','lunge',1],j_souga:['蒼牙斬','single',1],j_kabuto:['兜割り','heavy',1.5],j_hien:['飛燕斬','bolt',1],j_souren:['双牙連斬','combo',.9,2],j_ryusui:['流水の構え','buff',1],j_senpu:['旋風斬','spin',1.1],j_hakou:['破甲突き','lunge',1.3],j_kage:['影走り','blink',1],j_mikazuki:['三日月斬','arc',1.3],j_tsubame:['燕返し','tsubame',1.15],j_souten:['蒼天一閃','single',1.6],j_kenki:['剣気解放','buff',1],j_dankuu:['断空斬','bolt',1.5],j_shinsoku:['神速五連','combo',.6,5],j_soukyu:['蒼穹一刀','charge',2.4],j_fire:['ファイア','bolt',1,0,'#ff6a24'],j_wind:['ウィンド','bolt',1,0,'#9effc8'],j_stone:['ストーン','bolt',1.15,0,'#c89a5a'],j_light:['ライト','bolt',1.1,0,'#fff6c8'],j_enchant:['エンチャント','buff',1],j_combo3:['三連撃','combo',.9,3]};
+const BUG_MVN={swing:'なぎ払い',lunge:'突進',breath:'ブレス',bolt:'魔法弾',rain:'魔法の雨',burst:'バースト',slow:'スロウ',fan:'魔弾の扇',blink:'背後へ 瞬間移動',combo:'連撃',pull:'吸い寄せ',summon:'呼び寄せ',vortex:'渦',ranbu:'乱舞',quake:'地割れ',charge:'突撃',meteor:'メテオ',ring:'光輪',absorb:'吸収',shield:'シールド',hop:'とびかかり'};
+function bugClean(s){return s?String(s).replace(/[（(].*$/,'').replace(/[！!]+$/,'').trim():''}
+function bugInfo(k){
+  if(BUG.cache&&BUG.cache[k])return BUG.cache[k];BUG.cache=BUG.cache||{};
+  const fb=!EDEF[k]&&BUGFB[k];let d,name,col,keys=[],mesh;
+  if(fb){d={atk:fb.atk,hp:fb.hp,def:fb.def,speed:4,subNames:{}};name=fb.name;col=fb.col;mesh=fb.mesh;
+    keys=fb.mv.map(m=>Array.isArray(m)?m[0]:m);for(const m of fb.mv)if(Array.isArray(m))d.subNames[m[0]]=m[1]}
+  else{d=scaledDef(k);name=d.name;mesh=()=>makeEnemyMesh(k);
+    const bs=typeof BSET4!=='undefined'&&BSET4[k];col=(bs&&bs.slash)||d.boltCol||d.rainCol||(d.breathCols&&d.breathCols[0])||'#ffffff';
+    if(bs&&bs.forms){for(const f of bs.forms)keys.push(...(f.near||[]),...(f.far||[]),...(f.ult?[f.ult]:[]))}
+    else if(d.kind==='boss'||d.kind==='dragon'){keys=[...(d.subsNear||[]),...(d.subsFar||[]),...(d.subsLow||[])];if(!keys.length)keys=['swing','lunge','breath'];if(d.adv&&!d.noBorrow)keys.push('fan','blink')}
+    else if(d.kind==='caster')keys=d.casts||['bolt'];else keys=[d.kind||'swing'];
+    if(k==='qbanica'){col='#ff7a2a'}}
+  keys=[...new Set(keys)].filter(Boolean);
+  const mv=keys.map(key=>{const M4=typeof MV4!=='undefined'&&MV4[key],L=BUGMV[key];
+    let nm,arch,mul=1,n=3,c=null;
+    if(L){nm=L[0];arch=L[1];mul=L[2]||1;n=L[3]||3;c=L[4]||null}
+    if(M4){nm=M4.n||nm;arch=M4.as||M4.t||arch;mul=M4.mul||mul;if(M4.chain)n=M4.chain+1}
+    if(!arch)arch=key;
+    const sn=d.subNames&&d.subNames[key];
+    if(!nm)nm=bugClean(key==='breath'&&d.breathName)||bugClean(key==='rain'&&d.rainName)||bugClean(sn)||BUG_MVN[key]||key;
+    else if(sn&&!L)nm=bugClean(sn)||nm;
+    if(!nm)nm=key;
+    return{key,name:nm,arch,mul,n,col:c}});
+  const info={k,name,atk:d.atk||10,hp:d.hp||100,def:d.def||0,speed:d.speed||3,col,mv,mesh,rainCol:d.rainCol||col,breathCols:d.breathCols||[col,'#ffffff']};
+  BUG.cache[k]=info;return info}
+
+/* ---- 仲間としての データ ---- */
+function bugK(k){return typeof k==='string'&&k.startsWith('x:')}
+function bugActor(t){const I=bugInfo(t);const mhp=Math.max(30,Math.min(9999,Math.round(I.hp)));
+  return{key:'x:'+t,name:I.name,joined:1,lv:Math.max(1,((partyList().map(actorOf)[0])||P).lv||1),exp:0,hp:mhp,mhp,mp:0,mmp:0,def:Math.round(Math.min(I.def,(typeof defOf==='function'?defOf():20)*1.5)),pts:0,magics:[],slots:[null,null,null],sel:0,xt:t}}
+{const base=actorOf;actorOf=function(k){if(bugK(k))return BS&&BS.xact&&BS.xact[k]||bugActor(k.slice(2));return base(k)}}
+{const base=nameOf;nameOf=function(k){if(bugK(k))return bugName(k.slice(2));return base(k)}}
+{const base=setupParty;setupParty=function(cfg,jilModel){
+  const X=(S.flags.xmem||[]).filter(t=>EDEF[t]||BUGFB[t]);
+  const ok=X.length&&!(cfg.solo||cfg.triple||cfg.puppet||cfg.tutorial||cfg.arrest||cfg.event||cfg.noX);
+  if(!ok)return base(cfg,jilModel);
+  base(cfg,jilModel);const b=BS;b.xact={};
+  for(const t of X){const k='x:'+t;let m;try{m=bugInfo(t).mesh()}catch(e){console.error(e);m=null}
+    if(!m||!m.root){const g=new THREE.Group();g.add(new THREE.Mesh(new THREE.BoxGeometry(.8,1.6,.6),lam('#a050ff')));m={root:g}}
+    m.root.userData.bug=1;b.sc.add(m.root);m.root.visible=false;const a=bugActor(t);b.xact[k]=a;b.party.push({k,m,a});b.bufs[k]={};b.ails[k]={}}
+  $('#bhud').classList.toggle('multi',b.party.length>1)}}
+if(typeof MEMBERS!=='undefined')MEMBERS.__bugcol='#ff40ff';
+{const base=switchMember;switchMember=function(dir,forced){const b=BS;const sv={};
+  if(b&&b.party)for(const p of b.party)if(bugK(p.k)&&!MEMBERS[p.k]){MEMBERS[p.k]={name:nameOf(p.k),col:'#ff40ff',model:()=>p.m};sv[p.k]=1}
+  try{const r=base(dir,forced);if(b&&bugK(curK())){b.pl.xi=0;bugHud()}else $('#bughud')&&$('#bughud').remove();return r}finally{for(const k in sv)delete MEMBERS[k]}}}
+
+/* ---- 戦闘：ボスの 技を 自分で 使う ---- */
+function bugCur(){const b=BS;const t=curK().slice(2);const I=bugInfo(t);const pl=b.pl;pl.xi=(pl.xi||0)%I.mv.length;return{I,mv:I.mv[pl.xi]}}
+function bugHud(){const b=BS;if(!b||!bugK(curK())){const o=$('#bughud');if(o)o.remove();return}const {I,mv}=bugCur();
+  let el=$('#bughud');if(!el){el=document.createElement('div');el.id='bughud';el.style.cssText='position:fixed;left:50%;top:8px;transform:translateX(-50%);z-index:60;background:rgba(20,6,26,.86);border:2px solid #ff60ff;border-radius:8px;color:#fff;font:15px/1.5 inherit;padding:5px 14px;text-align:center;pointer-events:none;max-width:92vw';document.body.appendChild(el)}
+  el.innerHTML=`<b style="color:#ff9cff">${I.name}</b>　技 ${b.pl.xi+1}/${I.mv.length}：<b>${mv.name}</b><br><span style="font-size:12px;opacity:.85">攻撃＝技を出す　スキル＝次の技　魔法＝前の技</span>`}
+function bugDmg(mul){const b=BS,pl=b.pl;const I=bugCur().I;return Math.max(1,Math.round(Math.max(20,I.atk*4)*mul*(pl.xBuf>0?1.3:1)*rnd(.9,1.1)))}
+function bugHit(e,mul){if(!e||e.dead)return;damageEnemy(e,0,'skill',bugDmg(mul))}
+function bugArc(R,A,mul,once){const b=BS,pl=b.pl;for(const e of b.enemies){if(e.dead||(once&&once.has(e)))continue;const d=e.pos.distanceTo(pl.pos);if(d<R+e.d.r&&(angDiff(pl.face,angTo(pl.pos,e.pos))<A||d<1.2)){once&&once.add(e);bugHit(e,mul)}}}
+function bugNova(at,R,mul,pull){const b=BS;for(const e of b.enemies){if(e.dead)continue;const d=e.pos.distanceTo(at);if(d<R+e.d.r){if(pull)e.pos.lerp(at,.55);bugHit(e,mul)}}}
+const BUG_GROUP={swing:'slash',single:'slash',arc:'slash',heavy:'slash',tsubame:'slash',counter:'slash',tenjin:'slash',
+  lunge:'dash',charge:'dash',hop:'dash',leap:'dash',dash:'dash',thrust:'dash',lariat:'dash',
+  combo:'combo',ranbu:'combo',spin:'nova',burst:'nova',quake:'nova',ring:'nova',vortex:'nova',pull:'nova',absorb:'nova',
+  breath:'cone',bolt:'shot',slow:'shot',fan:'fan',rain:'rain',meteor:'rain',summon:'rain',blink:'blink',shield:'buff',buff:'buff'};
+function bugStart(){const b=BS,pl=b.pl;const {I,mv}=bugCur();const ne=nearestEnemy(pl.pos,14);if(ne)pl.face=angTo(pl.pos,ne.pos);
+  pl.state='xmove';pl.st=0;pl.hitDone=false;pl.xmv=mv;pl.xg=BUG_GROUP[mv.arch]||'slash';pl.xn=0;pl.xset=new Set();pl.xcol=mv.col||I.col;
+  banner(mv.name,700);sfx('tele');if(mv.arch==='charge'||mv.arch==='tenjin'||mv.arch==='counter')ringFx(pl.pos,pl.xcol,2.4,.5)}
+function bugFire(dt){const b=BS,pl=b.pl,mv=pl.xmv,g=pl.xg,col=pl.xcol,I=bugCur().I;const dir=V3(Math.sin(pl.face),0,Math.cos(pl.face));
+  const W=(mv.arch==='charge'||mv.arch==='tenjin')?.55:mv.arch==='heavy'?.32:.16;
+  const end=t=>{if(pl.st>t){pl.state='idle';pl.st=0}};
+  if(g==='slash'){if(pl.st>=W&&!pl.hitDone){pl.hitDone=true;const big=mv.arch==='heavy'||mv.arch==='tenjin'||mv.mul>=1.6;const R=mv.arch==='arc'?4.6:big?3.8:3.2,A=mv.arch==='arc'?1.7:1.15;
+      slashFx(pl.pos,pl.face,mv.arch==='heavy',col,big?2.2:1.6);if(big){ringFx(pl.pos.clone().addScaledVector(dir,1.6),col,3.4,.4);b.shake=.3;b.hitstop=.08}sfx(big?'boom':'slash');bugArc(R,A,mv.mul);
+      if(mv.arch==='tsubame')setTimeout(()=>{if(!BS||BS!==b)return;slashFx(pl.pos,pl.face+Math.PI*.15,true,col,1.6);bugArc(R,A,mv.mul*.8)},150)}
+    end(W+.32)}
+  else if(g==='dash'){const T=mv.arch==='hop'?.3:.24;if(pl.st>=W*.6&&pl.st<W*.6+T){pl.pos.addScaledVector(dir,(mv.arch==='charge'?30:22)*dt);if(Math.random()<.9)trailFx(col);
+      for(const e of b.enemies){if(e.dead||pl.xset.has(e))continue;if(e.pos.distanceTo(pl.pos)<1.6+e.d.r){pl.xset.add(e);bugHit(e,mv.mul);burst(e.pos.clone(),col,10,5)}}}
+    end(W*.6+T+.28)}
+  else if(g==='combo'){const n=Math.max(2,mv.n||3),gap=Math.max(.08,.22-n*.015);
+    while(pl.xn<n&&pl.st>=W+pl.xn*gap){const i=pl.xn++;pl.pos.addScaledVector(dir,.35);slashFx(pl.pos,pl.face+(i%2?.4:-.4),i===n-1,col,i===n-1?1.9:1.4);sfx('slash');bugArc(3,1.2,mv.mul);if(i===n-1){b.shake=.2}}
+    end(W+n*gap+.3)}
+  else if(g==='nova'){if(pl.st>=W+.1&&!pl.hitDone){pl.hitDone=true;const R=mv.arch==='quake'?5.2:mv.arch==='vortex'||mv.arch==='pull'?5.6:4.2;
+      ringFx(pl.pos,col,R,.5);ringFx(pl.pos,'#ffffff',R*.6,.35);burst(pl.pos,col,30,8);b.shake=.3;sfx('boom');bugNova(pl.pos,R,mv.mul*1.1,mv.arch==='vortex'||mv.arch==='pull')}
+    end(W+.6)}
+  else if(g==='cone'){const cs=I.breathCols||[col];if(pl.st>=W&&pl.st<W+.6){if(Math.random()<.8){const m=new THREE.Mesh(new THREE.SphereGeometry(.35,8,6),new THREE.MeshBasicMaterial({color:pick(cs),transparent:true,blending:THREE.AdditiveBlending}));m.position.copy(pl.pos).add(V3(0,1,0)).addScaledVector(dir,.8);const v=dir.clone().applyAxisAngle(V3(0,1,0),rnd(-.4,.4)).multiplyScalar(12);addFx(m,.5,(f,p,dt2)=>{m.position.addScaledVector(v,dt2);m.scale.setScalar(1+p*2);m.material.opacity=1-p})}
+      const k=Math.floor((pl.st-W)/.12);if(k>pl.xn){pl.xn=k;for(const e of b.enemies){if(e.dead)continue;const d=e.pos.distanceTo(pl.pos);if(d<7+e.d.r&&angDiff(pl.face,angTo(pl.pos,e.pos))<.6)bugHit(e,mv.mul*.35)}}}
+    if(pl.st>=W&&!pl.hitDone){pl.hitDone=true;sfx('boom')}end(W+.9)}
+  else if(g==='shot'||g==='fan'){if(pl.st>=W&&!pl.hitDone){pl.hitDone=true;const n=g==='fan'?5:1;
+      for(let i=0;i<n;i++){const a=pl.face+(n>1?(i/(n-1)-.5)*1:0);const d2=V3(Math.sin(a),0,Math.cos(a));spawnProj({from:pl.pos,dir:d2,col,r:.4,speed:17,life:1.2,pierce:mv.arch==='bolt'&&mv.mul>=1.4,onHit:e=>{bugHit(e,mv.mul*(n>1?.7:1));if(mv.arch==='slow'&&!e.dead)e.freeze=Math.max(e.freeze||0,1.5);burst(e.pos.clone(),col,10,4)}})}
+      sfx('skill')}
+    end(W+.3)}
+  else if(g==='rain'){const big=mv.arch==='meteor';const tg=nearestEnemy(pl.pos,16);const at=tg?tg.pos.clone():pl.pos.clone().addScaledVector(dir,4);
+    if(pl.st>=W&&!pl.hitDone){pl.hitDone=true;pl.xat=at;sfx('tele')}
+    const N=big?1:7,gap=.09;
+    while(pl.hitDone&&pl.xn<N&&pl.st>=W+pl.xn*gap){pl.xn++;const c=big?pl.xat.clone():pl.xat.clone().add(V3(rnd(-2.4,2.4),0,rnd(-2.4,2.4)));const r=big?3.6:1.6;const rc=I.rainCol||col;
+      const ball=new THREE.Mesh(new THREE.SphereGeometry(big?.9:.3,10,8),new THREE.MeshBasicMaterial({color:rc,transparent:true,blending:THREE.AdditiveBlending}));ball.position.copy(c).add(V3(0,9,0));ringFx(c,rc,r,.3);addFx(ball,.28,(f,p)=>{ball.position.y=9-8.5*p});
+      setTimeout(()=>{if(!BS||BS!==b)return;ringFx(c,rc,r,.4);burst(c,rc,big?30:8,big?8:4);if(big){b.shake=.4;sfx('boom')}bugNova(c,r,mv.mul*(big?2:.6))},280)}
+    end(W+N*gap+.35)}
+  else if(g==='blink'){if(pl.st>=W*.5&&!pl.hitDone){pl.hitDone=true;const tg=nearestEnemy(pl.pos,18);burst(pl.pos,col,14,4);
+      if(tg){const back=V3(Math.sin(tg.face),0,Math.cos(tg.face)).multiplyScalar(-(1.6+tg.d.r));pl.pos.copy(tg.pos).add(back);pl.pos.x=clamp(pl.pos.x,-b.half,b.half);pl.pos.z=clamp(pl.pos.z,-b.half,b.half);pl.face=angTo(pl.pos,tg.pos)}
+      burst(pl.pos,col,14,4);sfx('just');slashFx(pl.pos,pl.face,false,col,1.7);bugArc(3.4,1.3,mv.mul*1.2)}
+    end(W+.4)}
+  else if(g==='buff'){if(pl.st>=W&&!pl.hitDone){pl.hitDone=true;pl.xBuf=10;const A=ACT();const h=Math.round(A.mhp*.15);A.hp=Math.min(A.mhp,A.hp+h);ringFx(pl.pos,col,3,.5);burst(pl.pos,col,20,4);sfx('heal');popup(pl.pos,'攻撃↑ +'+h,'h')}
+    end(W+.4)}
+  else end(.5)}
+function bugAnim(dt){const b=BS,pl=b.pl,m=pl.m,r=m.root;r.position.set(pl.pos.x,0,pl.pos.z);r.rotation.y=pl.face;
+  r.position.y=pl.state==='idle'?Math.abs(Math.sin(pl.walk))*.12:pl.state==='xmove'&&pl.xg==='dash'?.25:0;
+  const s=pl.state==='xmove'&&pl.st<.2?1+pl.st*.4:1;r.scale&&(r.userData.s0=r.userData.s0||r.scale.x);if(r.userData.s0)r.scale.setScalar(r.userData.s0*s);
+  r.rotation.z=pl.state==='dodge'?.3:0;if(pl.state==='xmove'&&pl.xg==='nova')r.rotation.y=pl.face+pl.st*20}
+{const base=updatePlayer;updatePlayer=function(dt){const b=BS;if(!b||!b.party||!bugK(curK()))return base(dt);
+  const pl=b.pl;pl.st+=dt;if(pl.empower>0)pl.empower-=dt;if(pl.xBuf>0)pl.xBuf-=dt;for(const k in pl.buf)if(pl.buf[k]>0)pl.buf[k]-=dt;
+  const mv=moveInput();const mlen=mv.length();
+  if(consume('guard')){pl.guardStart=b.t;answerThreats('parry')}
+  pl.guarding=held.guard&&pl.state==='idle';
+  if(consume('switch')){switchMember(1);if(!bugK(curK()))return}
+  const n=bugCur().I.mv.length;
+  if(consume('skill')){pl.xi=(pl.xi+1)%n;sfx('move');bugHud();banner(bugCur().mv.name,500)}
+  if(consume('magic')||consume('magic2')){pl.xi=(pl.xi+n-1)%n;sfx('move');bugHud();banner(bugCur().mv.name,500)}
+  if(pl.state==='idle'){if(consume('dodge'))startDodge(mv);else if(consume('atk'))bugStart();else if(consume('item'))useHerb()}
+  else if(pl.state==='xmove'&&pl.st>.2&&consume('dodge'))startDodge(mv);
+  const half=b.half;
+  if(pl.state==='idle'){const sp=(pl.guarding?1.6:Math.max(4.6,Math.min(7,bugCur().I.speed*1.3)))*(b.ails&&b.ails[curK()]&&b.ails[curK()].slow>0?.6:1);
+    if(mlen>.1){pl.pos.addScaledVector(mv,sp*dt);if(!pl.guarding)pl.face=turnTo(pl.face,Math.atan2(mv.x,mv.z),dt*14);pl.walk+=dt*mlen*11}else pl.walk*=.85;
+    if(pl.guarding){const ne=nearestEnemy(pl.pos,8);if(ne)pl.face=turnTo(pl.face,angTo(pl.pos,ne.pos),dt*10)}}
+  else if(pl.state==='xmove')bugFire(dt);
+  else if(pl.state==='dodge'){const sp=lerp(15,2,Math.min(1,pl.st/.34));pl.pos.addScaledVector(pl.dodgeDir,sp*dt);if(pl.st>.38){pl.state='idle';pl.st=0}}
+  else if(pl.state==='hurt'){pl.pos.addScaledVector(pl.vel,dt);pl.vel.multiplyScalar(.86);if(pl.st>.38){pl.state='idle';pl.st=0}}
+  else if(pl.state==='item'){if(pl.st>.55){pl.state='idle';pl.st=0}}
+  else if(pl.state!=='down'){if(pl.st>.6){pl.state='idle';pl.st=0}}
+  pl.pos.x=clamp(pl.pos.x,-half,half);pl.pos.z=clamp(pl.pos.z,-half,half);
+  bugAnim(dt);if(!$('#bughud'))bugHud()}}
+{const base=animatePlayer;animatePlayer=function(dt){const b=BS;if(b&&b.party&&bugK(curK()))return bugAnim(dt);return base(dt)}}
+{const base=render3D;render3D=function(){const r=base.apply(this,arguments);try{const b=BS;if(b&&b.party&&bugK(curK())){const h=$('#bhud .herb');if(h)h.textContent='技：'+bugCur().mv.name+'（スキル・魔法で 切替）'}}catch(e){}return r}}
+{const base=endBattle;endBattle=function(){const o=$('#bughud');if(o)o.remove();return base.apply(this,arguments)}}
+
+/* BUGROOM>> */
 </script>
 
 </body>
