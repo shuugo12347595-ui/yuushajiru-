@@ -1,7 +1,7 @@
 {
-  "name": "勇者ジル 第三部",
-  "short_name": "勇者ジル3",
-  "description": "第三部",
+  "name": "勇者ジルReturn",
+  "short_name": "ジルReturn",
+  "description": "勇者ジルReturn（第三部・第四部）",
   "start_url": "./",
   "scope": "./",
   "display": "fullscreen",
