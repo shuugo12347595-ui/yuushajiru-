@@ -720,7 +720,7 @@ function slimeSprite(f){const rows=["................","................",".....
 
 /* ================= MAPS ================= */
 const BASE={
-rieve:["TTTTTTTTTTTTTTTTTTTTTTTT","T..f.......:.......f...T","T.WWWWWWW..:..WWWWWWW..T","T.W_b___W..:..W_____W..T","T.W_____W..:..WCCCCCW..T","T.W_t_cBW..:..W____BW..T","T.WWWDWWW..:..WWWDWWW..T","T....:.....:.....:.....T","T....::::::w::::::.....T","T..f.......:........f..T","T.xxxxxxx..:..WWWWWWW..T","T.x.....x..:..W_b_b_W..T","T.x.....x..:..W_____W..T","T.x.....x..:..W__t__W..T","T.xxx:xxx..:..WWWDWWW..T","T....:.....:.....:.....T","T....::::::::::::::..f.T","T..S.......:...........T","TTTTTTTTTT.:.TTTTTTTTTTT","TTTTTTTTTT.:.TTTTTTTTTTT"],
+rieve:["TTTTTTTTTTTTTTTTTTTTTTTT","T..f.......:.......f...T","T.WWWWWWW..:..WWWWWWW..T","T.W_b___W..:..W_____W..T","T.W_____W..:..WCCCCCW..T","T.W_t_cBW..:..W____BW..T","T.WWWDWWW..:..WWWDWWW..T","T....:.....:.....:.....T","T....::::::w::::::.....T","T..f.......:........f..T","T.xxxxxxx..:..WWWWWWW..T","T.x.....x..:..W_b_b_W..T","T.x.....x..:..W_____W..T","T.x.....x..:..W_t___W..T","T.xxx:xxx..:..WWWDWWW..T","T....:.....:.....:.....T","T....::::::::::::::..f.T","T..S.......:...........T","TTTTTTTTTT.:.TTTTTTTTTTT","TTTTTTTTTT.:.TTTTTTTTTTT"],
 alesta:["HHHHHHHHHHHHHHHHHHHHHHHHHHHH","H..f.....QQQQQQQQQQ.....f..H","H........QQQQQQQQQQ........H","H.WWWWW..QQQQQQQQQQ..WWWWW.H","H.W___W..QQQQggQQQQ..W___W.H","H.WCCCW.....PPPP.....WCCCW.H","H.W___W.....PPPP.....W___W.H","H.WWDWW.....PPPP.....WWDWW.H","H...P.......PPPP.......P...H","H...PPPPPPPPPPPPPPPPPPPP...H","H..T.......PPOOPP.......T..H","H..........PPOOPP..........H","H...PPPPPPPPPPPPPPPPPPPP...H","H...P.......PPPP.......P...H","H.WWDWW.....PPPP.....WWDWW.H","H.W___W.....PPPP.....W___W.H","H.W___W.....PPPP.....W_t_W.H","H.WWWWW..f..PPPP..f..WWWWW.H","H...........PPPP...........H","HHHHHHHHHHHHPPPPHHHHHHHHHHHH","HHHHHHHHHHHHPPPPHHHHHHHHHHHH"],
 };
 function genWorld(){
@@ -984,9 +984,9 @@ async function caught(n){
 function tintNow(){const id=F.map.id,s=S.step;if(F.map.tint)return F.map.tint;if(s===43&&(id==='starbeach'||id==='lumtown'))return 'dusk';if(F.time==='night'&&['lumtown','starbeach','luminas','temple'].includes(id))return 'night';if(id==='ruins'&&s<60)return 'ruin';if(id==='rieve'){if(s===8)return 'night';if(s===6||s===7)return 'dusk'}return 'day'}
 function boundaryCheck(nx,ny){
   if(F.map.id==='world'&&S.step<8&&nx>=13)return async()=>{await say('ジル','（ガロに言われている。今日は村の近くまでだ）')};
-  if(F.map.id==='rieve'&&ny>=18&&S.step<4)return async()=>{await say('ジル','（先に訓練場のガロに会いに行こう）');};
-  if(F.map.id==='rieve'&&ny>=18&&S.step>=5&&S.step<=8&&S.step!==4)return async()=>{await say('ジル',S.step===8?'（村を守らないと……！）':'（今日はもう遅い。村にいよう）')};
-  if(F.map.id==='rieve'&&ny>=18&&S.step===4&&S.slimes>=3)return async()=>{await say('ジル','（スライムは片付けた。ガロに報告しよう）')};
+  if(F.map.id==='rieve'&&ny>=18&&nx>=10&&nx<=12&&S.step<4)return async()=>{await say('ジル','（先に訓練場のガロに会いに行こう）');};
+  if(F.map.id==='rieve'&&ny>=18&&nx>=10&&nx<=12&&S.step>=5&&S.step<=8)return async()=>{await say('ジル',S.step===8?'（村を守らないと……！）':'（今日はもう遅い。村にいよう）')};
+  if(F.map.id==='rieve'&&ny>=18&&nx>=10&&nx<=12&&S.step===4&&S.slimes>=3)return async()=>{await say('ジル','（スライムは片付けた。ガロに報告しよう）')};
   return null;
 }
 function onStep(){
@@ -2883,8 +2883,8 @@ const NPCS={
         const r=await doBattle({enemies:['dummy'],bg:'train',tutorial:true,noEscape:true,music:'battle'});
         await talk('ガロ',['……相変わらず、末恐ろしいガキだ。','村の南の草原で スライムが 増えてる。3匹ほど 片付けてきてくれ。']);setStep(4);
         await tutorial('フィールド','村の南の出口から 外に出られます。<br>草原を歩くと 魔物と出会います。<br>メニュー（<span class="k">'+keyName('menu')+'</span>）で 記録（セーブ）や どうぐが使えます。')}
-      else if(st()===4)await talk('ガロ',[S.slimes>=3?'…………。':`スライムは あと${3-S.slimes}匹だ。村の南から 外に出ろ。`])
-      else if(st()===5){await talk('ガロ',['早かったな。……よし、今日は ここまでだ。','もう 日が暮れる。親父さんに 顔を見せてやれ。']);await fadeTo(1,500);setStep(6);reloadNPCs();await fadeTo(0,500)}
+      else if(st()===4&&S.slimes<3)await talk('ガロ',[`スライムは あと${3-S.slimes}匹だ。村の南から 外に出ろ。`])
+      else if(st()===5||(st()===4&&S.slimes>=3)){if(st()===4)setStep(5);await talk('ガロ',['早かったな。……よし、今日は ここまでだ。','もう 日が暮れる。親父さんに 顔を見せてやれ。']);await fadeTo(1,500);setStep(6);reloadNPCs();await fadeTo(0,500)}
       else await talk('ガロ',['今日は よく やった。明日も 遅れるなよ。'])}},
     {id:'youth',spr:'youth',x:3,y:12,cond:()=>st()<=7,talk:async()=>talk('自警団員',['団長も 認める 腕前だもんな、ジルは。','でも 油断するなよ。魔物は いつも 群れで来る。'])},
     {id:'woman',spr:'woman',x:13,y:9,wander:1,cond:()=>st()<=7,talk:async()=>talk('村の女',[st()>=6?'夕焼けが きれいねえ。今夜は 冷えそう。':'ジル、今日も 稽古？ あんたがいれば 村は安心ね。'])},
